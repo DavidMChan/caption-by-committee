@@ -3,7 +3,7 @@ from PIL import Image
 from cbc.caption.socratic_models import SocraticModelCaptionEngine
 
 
-def test_socratic_models():
+def test_socratic_models() -> None:
     engine = SocraticModelCaptionEngine(device="cuda:1")  # Load using the default parameters
 
     # Load an image

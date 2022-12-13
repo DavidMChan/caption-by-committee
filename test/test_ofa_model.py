@@ -3,7 +3,7 @@ from PIL import Image
 from cbc.caption.ofa_engine import OFACaptionEngine
 
 
-def test_ofa_base():
+def test_ofa_base() -> None:
     engine = OFACaptionEngine(
         ofa_model="/home/davidchan/Repos/OFA-large-caption/", device="cuda:1"
     )  # Load using the default parameters

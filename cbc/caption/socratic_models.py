@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 import clip
 import numpy as np
