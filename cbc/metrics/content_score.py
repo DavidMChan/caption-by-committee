@@ -17,7 +17,7 @@ def get_nlp() -> spacy.language.Language:
     return _NLP
 
 
-def compute_object_roverlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN",)) -> float:
+def exact_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN",)) -> float:
     """Compute the object overlap between a query and a list of targets.
 
     Args:
@@ -37,7 +37,7 @@ def compute_object_roverlap(query: str, targets: List[str], POS: Tuple[str, ...]
     return float(len(set(query_objects).intersection(set(targets_objects))) / len(set(targets_objects)))
 
 
-def compute_object_rdistance(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN",)) -> float:
+def fuzzy_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN",)) -> float:
     """Compute the object overlap between a query and a list of targets.
 
     Args:
@@ -86,44 +86,51 @@ def compute_and_add_content_recall(samples: List[Dict[str, Any]], reference_key:
         if "content_recall" not in sample["scores"]:
             sample["scores"]["content_recall"] = {}
 
-        # Exact Recall
-        sample["scores"]["content_recall"]["baseline_noun_recall"] = compute_object_roverlap(
-            sample["baseline"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["baseline_verb_recall"] = compute_object_roverlap(
-            sample["baseline"], sample[reference_key], POS=("VERB",)
-        )
-        sample["scores"]["content_recall"]["candidate_summary_noun_recall"] = compute_object_roverlap(
-            sample["candidate_summary"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["candidate_summary_verb_recall"] = compute_object_roverlap(
-            sample["candidate_summary"], sample[reference_key], POS=("VERB",)
-        )
-        sample["scores"]["content_recall"]["reference_summary_noun_recall"] = compute_object_roverlap(
-            sample["reference_summary"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["reference_summary_verb_recall"] = compute_object_roverlap(
-            sample["reference_summary"], sample[reference_key], POS=("VERB",)
-        )
+        if "baseline" in sample:
+            # Exact Recall
+            sample["scores"]["content_recall"]["baseline_noun_recall"] = exact_overlap(
+                sample["baseline"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["baseline_verb_recall"] = exact_overlap(
+                sample["baseline"], sample[reference_key], POS=("VERB",)
+            )
+            # Fuzzy Recall
+            sample["scores"]["content_recall"]["baseline_noun_fuzzy_recall"] = fuzzy_overlap(
+                sample["baseline"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["baseline_verb_fuzzy_recall"] = fuzzy_overlap(
+                sample["baseline"], sample[reference_key], POS=("VERB",)
+            )
 
-        # Fuzzy Recall
-        sample["scores"]["content_recall"]["baseline_noun_fuzzy_recall"] = compute_object_rdistance(
-            sample["baseline"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["baseline_verb_fuzzy_recall"] = compute_object_rdistance(
-            sample["baseline"], sample[reference_key], POS=("VERB",)
-        )
-        sample["scores"]["content_recall"]["candidate_summary_noun_fuzzy_recall"] = compute_object_rdistance(
-            sample["candidate_summary"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["candidate_summary_verb_fuzzy_recall"] = compute_object_rdistance(
-            sample["candidate_summary"], sample[reference_key], POS=("VERB",)
-        )
-        sample["scores"]["content_recall"]["reference_summary_noun_fuzzy_recall"] = compute_object_rdistance(
-            sample["reference_summary"], sample[reference_key], POS=("NOUN", "PROPN")
-        )
-        sample["scores"]["content_recall"]["reference_summary_verb_fuzzy_recall"] = compute_object_rdistance(
-            sample["reference_summary"], sample[reference_key], POS=("VERB",)
-        )
+        if "candidate_summary" in sample:
+            # Exact Recall
+            sample["scores"]["content_recall"]["candidate_summary_noun_recall"] = exact_overlap(
+                sample["candidate_summary"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["candidate_summary_verb_recall"] = exact_overlap(
+                sample["candidate_summary"], sample[reference_key], POS=("VERB",)
+            )
+            # Fuzzy Recall
+            sample["scores"]["content_recall"]["candidate_summary_noun_fuzzy_recall"] = fuzzy_overlap(
+                sample["candidate_summary"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["candidate_summary_verb_fuzzy_recall"] = fuzzy_overlap(
+                sample["candidate_summary"], sample[reference_key], POS=("VERB",)
+            )
 
+        if "reference_summary" in sample:
+            # Exact Recall
+            sample["scores"]["content_recall"]["reference_summary_noun_recall"] = exact_overlap(
+                sample["reference_summary"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["reference_summary_verb_recall"] = exact_overlap(
+                sample["reference_summary"], sample[reference_key], POS=("VERB",)
+            )
+            # Fuzzy Recall
+            sample["scores"]["content_recall"]["reference_summary_noun_fuzzy_recall"] = fuzzy_overlap(
+                sample["reference_summary"], sample[reference_key], POS=("NOUN", "PROPN")
+            )
+            sample["scores"]["content_recall"]["reference_summary_verb_fuzzy_recall"] = fuzzy_overlap(
+                sample["reference_summary"], sample[reference_key], POS=("VERB",)
+            )
     return samples

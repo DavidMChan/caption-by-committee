@@ -66,6 +66,27 @@ def _get_text_features(
     return candidate_text_features, reference_text_features, baseline_text_features
 
 
+def _compute_rank(index: int, feature_db: torch.Tensor, candidate: str, char_limit: int = 300) -> np.ndarray:
+    model, _, device = clip_model()
+    while True:
+        try:
+            candidate_text = clip.tokenize([candidate[:char_limit]]).to(device)  # type: ignore
+            break
+        except RuntimeError:
+            # Back off the character limit
+            if char_limit < 20:
+                raise RuntimeError("Could not tokenize text -- too long?")
+            char_limit -= 20
+
+    with torch.no_grad():
+        candidate_text_features = model.encode_text(candidate_text)
+        candidate_text_features /= candidate_text_features.norm(dim=-1, keepdim=True)
+        candidate_similarity_scores = feature_db @ candidate_text_features.T
+        candidate_ranks = (candidate_similarity_scores > candidate_similarity_scores[index]).sum(dim=0)
+
+    return (candidate_ranks + 1).cpu().numpy()
+
+
 def compute_clips(
     index: int, feature_db: torch.Tensor, candidate: str, reference: str, baseline: str
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -89,41 +110,32 @@ def compute_and_add_clip_recall(
     feature_db = _get_image_feature_db(samples, image_path_key, image_root)
 
     for index, sample in enumerate(tqdm.tqdm(samples)):
-        candidate_ranks, reference_ranks, baseline_ranks = compute_clips(
-            index, feature_db, sample["candidate_summary"], sample["reference_summary"], sample["baseline"]
-        )
 
-        if "scores" not in sample:
-            sample["scores"] = {}
+        if "candidate_summary" in sample:
+            candidate_ranks = _compute_rank(index, feature_db, sample["candidate_summary"])
+            sample["scores"]["candidate_summary_clip_recall_rank"] = float(np.mean(candidate_ranks))
+            sample["scores"]["candidate_summary_clip_recall_mrr"] = float(np.mean(1 / candidate_ranks))
+            sample["scores"]["candidate_summary_clip_recall_at_1"] = float(np.mean(candidate_ranks <= 1))
+            sample["scores"]["candidate_summary_clip_recall_at_5"] = float(np.mean(candidate_ranks <= 5))
+            sample["scores"]["candidate_summary_clip_recall_at_10"] = float(np.mean(candidate_ranks <= 10))
+            sample["scores"]["candidate_summary_clip_recall_max_rank"] = float(np.amax(candidate_ranks))
 
-        # Mean Rank
-        sample["scores"]["candidate_summary_clip_recall_rank"] = float(np.mean(candidate_ranks))
-        sample["scores"]["reference_summary_clip_recall_rank"] = float(np.mean(reference_ranks))
-        sample["scores"]["baseline_clip_recall_rank"] = float(np.mean(baseline_ranks))
+        if "reference_summary" in sample:
+            reference_ranks = _compute_rank(index, feature_db, sample["reference_summary"])
+            sample["scores"]["reference_summary_clip_recall_rank"] = float(np.mean(reference_ranks))
+            sample["scores"]["reference_summary_clip_recall_mrr"] = float(np.mean(1 / reference_ranks))
+            sample["scores"]["reference_summary_clip_recall_at_1"] = float(np.mean(reference_ranks <= 1))
+            sample["scores"]["reference_summary_clip_recall_at_5"] = float(np.mean(reference_ranks <= 5))
+            sample["scores"]["reference_summary_clip_recall_at_10"] = float(np.mean(reference_ranks <= 10))
+            sample["scores"]["reference_summary_clip_recall_max_rank"] = float(np.amax(reference_ranks))
 
-        # Mean Reciprocal Rank
-        sample["scores"]["candidate_summary_clip_recall_mrr"] = float(np.mean(1 / candidate_ranks))
-        sample["scores"]["reference_summary_clip_recall_mrr"] = float(np.mean(1 / reference_ranks))
-        sample["scores"]["baseline_clip_recall_mrr"] = float(np.mean(1 / baseline_ranks))
-
-        # Mean Recall @ 1
-        sample["scores"]["candidate_summary_clip_recall_at_1"] = float(np.mean(candidate_ranks <= 1))
-        sample["scores"]["reference_summary_clip_recall_at_1"] = float(np.mean(reference_ranks <= 1))
-        sample["scores"]["baseline_clip_recall_at_1"] = float(np.mean(baseline_ranks <= 1))
-
-        # Mean Recall @ 5
-        sample["scores"]["candidate_summary_clip_recall_at_5"] = float(np.mean(candidate_ranks <= 5))
-        sample["scores"]["reference_summary_clip_recall_at_5"] = float(np.mean(reference_ranks <= 5))
-        sample["scores"]["baseline_clip_recall_at_5"] = float(np.mean(baseline_ranks <= 5))
-
-        # Mean Recall @ 10
-        sample["scores"]["candidate_summary_clip_recall_at_10"] = float(np.mean(candidate_ranks <= 10))
-        sample["scores"]["reference_summary_clip_recall_at_10"] = float(np.mean(reference_ranks <= 10))
-        sample["scores"]["baseline_clip_recall_at_10"] = float(np.mean(baseline_ranks <= 10))
-
-        # Max Recall Rank
-        sample["scores"]["candidate_summary_clip_recall_max_rank"] = float(np.amax(candidate_ranks))
-        sample["scores"]["reference_summary_clip_recall_max_rank"] = float(np.amax(reference_ranks))
-        sample["scores"]["baseline_clip_recall_max_rank"] = float(np.amax(baseline_ranks))
+        if "baseline" in sample:
+            baseline_ranks = _compute_rank(index, feature_db, sample["baseline"])
+            sample["scores"]["baseline_clip_recall_rank"] = float(np.mean(baseline_ranks))
+            sample["scores"]["baseline_clip_recall_mrr"] = float(np.mean(1 / baseline_ranks))
+            sample["scores"]["baseline_clip_recall_at_1"] = float(np.mean(baseline_ranks <= 1))
+            sample["scores"]["baseline_clip_recall_at_5"] = float(np.mean(baseline_ranks <= 5))
+            sample["scores"]["baseline_clip_recall_at_10"] = float(np.mean(baseline_ranks <= 10))
+            sample["scores"]["baseline_clip_recall_max_rank"] = float(np.amax(baseline_ranks))
 
     return samples
