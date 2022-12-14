@@ -27,8 +27,13 @@ def _get_ofa_model(model: str) -> Tuple[str, str]:
         raise ValueError(f"Invalid OFA model: {model}, should be one of {list(_OFA_PATHS.keys())}")
 
     git_repo = _OFA_PATHS[model]
+
+    # If the repo is already cloned, we can use it
+    cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "cbc", model)
+    if os.path.exists(cache_dir):
+        return cache_dir, cache_dir
+
     # Clone the repo into a cache directory
-    cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "cbc", "ofa")
     os.makedirs(cache_dir, exist_ok=True)
     repo = Repo.clone_from(git_repo, cache_dir, branch="main")
     repo.git.checkout("main")
@@ -43,7 +48,9 @@ class OFACaptionEngine(CaptionEngine):
         tokenizer_path, model_path = _get_ofa_model(ofa_model)
         self.tokenizer = OFATokenizer.from_pretrained(tokenizer_path)
         self.model = OFAModel.from_pretrained(model_path, device=device, use_cache=True)
+        self.model = self.model.to(device or "cpu").eval()
         self.prompt = prompt
+        self.device = device or "cpu"
 
     def _preprocess_image(self, raw_image: Image.Image) -> torch.Tensor:
         mean, std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
@@ -56,12 +63,12 @@ class OFACaptionEngine(CaptionEngine):
                 transforms.Normalize(mean=mean, std=std),
             ]
         )
-        return patch_resize_transform(raw_image).unsqueeze(0)  # type: ignore
+        return patch_resize_transform(raw_image).unsqueeze(0).to(self.device)  # type: ignore
 
     def _get_language_prompt(
         self,
     ) -> torch.Tensor:
-        return self.tokenizer([self.prompt], return_tensors="pt").input_ids
+        return self.tokenizer([self.prompt], return_tensors="pt").input_ids.to(self.device)
 
     def __call__(self, raw_image: Image.Image, n_captions: int = 1, temperature: Optional[float] = 1.0) -> List[str]:
 

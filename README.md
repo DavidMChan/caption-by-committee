@@ -1,5 +1,7 @@
 # Captioning by Comittee
 
+This is the implementation of the paper: *PAPER TITLE TO COME*.
+
 
 ## Installation
 
@@ -26,12 +28,70 @@ export OPENAI_API_ORG=<org>
 export HUGGINGFACE_API_KEY=<api key>
 ```
 
-
+The repository can be tested by running `cbc caption test/test_image.jpg`, which should produce a sample caption using
+the OFA and GPT-2 models.
 
 ## Running the model using the CLI
 
+To run the model using the CLI, you can use:
+```bash
+$ cbc caption <image path>
+```
 
-## Running the model as an API
+If you have a full dataset of examples, you can use:
+```bash
+$ cbc evaluate-dataset <dataset json>
+```
+
+Where the JSON format (minimally) looks like:
+```json
+[
+    {
+        "references": ["List", "of", "references"],
+        "image_path": "Relative path to image"
+    },
+    ...
+]
+```
+
+For more details on these commands, see `cbc caption --help` and `cbc evalaute --help`.
+
+
+## Running the model as an REST API
+
+*COMING SOON*
+
+## Using the python API
+
+To use the python API, see the following minimal example using GPT3 and OFA:
+
+```python
+from cbc.caption import OFACaptionEngine
+from cbc.caption_by_comittee import caption_by_comittee
+from cbc.lm import GPT3Davinci3
+
+def run_caption() -> None:
+    # Load the image
+    image = Image.open("coco_test_images/COCO_val2014_000000165547.jpg").convert("RGB")
+
+    # Construct a captioning engine (see: cbc/caption/__init__.py for available engines)
+    caption_engine = OFACaptionEngine(device="cuda:1")
+
+    # Construct a language model engine (see cbc/lm/__init__.py for available engines)
+    lm_engine = GPT3Davinci3()
+
+    # Generate the caption
+    caption = caption_by_comittee(
+        image,
+        caption_engine=caption_engine,
+        lm_engine=lm_engine,
+        caption_engine_temperature=1.0,
+        n_captions=15,
+    )
+
+    print(caption)
+
+```
 
 
 ## Running the demos
@@ -39,3 +99,13 @@ export HUGGINGFACE_API_KEY=<api key>
 To load the demos, install the library, and then use streamlit to run the demo:
 
 *Single Image End-to-End Demo:* `streamlit run demos/single_image.py`
+
+
+## References
+
+If you found this work useful, cite us:
+```
+{
+
+}
+```

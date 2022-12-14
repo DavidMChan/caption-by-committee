@@ -1,0 +1,152 @@
+[
+    {
+        "_id": 207151,
+        "split": "validate",
+        "candidates": [
+            "pizza that is sitting on top of a plate"
+        ],
+        "media_path": "COCO_val2014_000000207151.jpg",
+        "references": [
+            "A vegetarian pizza is half eaten on a pizza holder. ",
+            "A couple of pieces of pizza with vegetable slices on them.",
+            "A wooden pan serving tray with a pizza on it.",
+            "A pizza on a cutting board is half gone.",
+            "A Pizza is nearly finished with only three pieces left. "
+        ]
+    },
+    {
+        "_id": 491497,
+        "split": "validate",
+        "candidates": [
+            "bathroom that is sitting on top of a bed"
+        ],
+        "media_path": "COCO_val2014_000000491497.jpg",
+        "references": [
+            "A fluffy white chair that faces away fro a television.",
+            "A pillow covered reading chair in the corner of the living room",
+            "The living room is empty with the television on. ",
+            "White ornate seat in nicely decorated room with television.",
+            "A white chair, books and shelves and a tv on in this room."
+        ]
+    },
+    {
+        "_id": 2240,
+        "split": "validate",
+        "candidates": [
+            "close up of a teddy bear sitting on a table"
+        ],
+        "media_path": "COCO_val2014_000000002240.jpg",
+        "references": [
+            "A pile of teddy bears and dolls in a toy box.",
+            "Three teddy bears and a doll like next to each other in a box.",
+            "A group of stuffed toys are placed together.",
+            "Teddy bears and dolls laying down on a bench.",
+            "A group of cute stuffed animals in a bed."
+        ]
+    },
+    {
+        "_id": 223648,
+        "split": "validate",
+        "candidates": [
+            "wooden bench sitting on top of a table"
+        ],
+        "media_path": "COCO_val2014_000000223648.jpg",
+        "references": [
+            "Multiple wooden spoons are shown on a table top.",
+            "A table surrounded by chairs and filled with cooking utensils.",
+            "Wooden spoons laid out across a kitchen table.",
+            "Wooden spoons and forks are all over a table.",
+            "A table and chairs with wooden kitchen tools on top."
+        ]
+    },
+    {
+        "_id": 191096,
+        "split": "validate",
+        "candidates": [
+            "baseball player swinging a bat at a baseball game"
+        ],
+        "media_path": "COCO_val2014_000000191096.jpg",
+        "references": [
+            "A baseball player holding a bat while standing in a field.",
+            "The men are playing a game of baseball on the field. ",
+            "A baseball player taking a swing at a ball",
+            "The batter's waiting to see if the ball is fair or foul.",
+            "Two baseball players and an umpire are standing on the field."
+        ]
+    },
+    {
+        "_id": 371250,
+        "split": "validate",
+        "candidates": [
+            "black and white cat sitting on top of a bed"
+        ],
+        "media_path": "COCO_val2014_000000371250.jpg",
+        "references": [
+            "A brown sofa and ottoman with pillows and remotes.",
+            "A small oval orange couch and ottoman with pineapple pillows.",
+            "A couch and ottoman are shown with remotes.",
+            "a small couch overed with blankes and pinapple designed pillows\n",
+            "a brown sofa with pineapple pillows and and ottoman with two remotes on it"
+        ]
+    },
+    {
+        "_id": 473237,
+        "split": "validate",
+        "candidates": [
+            "man is holding a slice of pizza"
+        ],
+        "media_path": "COCO_val2014_000000473237.jpg",
+        "references": [
+            "A young girl eating a slice of pizza.",
+            "A young girl with a green jacket eating a piece of pepperoni pizza.",
+            "A girl takes a bite of her pepperoni pizza. ",
+            "A little girl eating a slice of pizza in a room.",
+            "Small girl in green shirt holding a slice of pizza to her face. "
+        ]
+    },
+    {
+        "_id": 288955,
+        "split": "validate",
+        "candidates": [
+            "black and white cat laying on a table next to a bowl of food"
+        ],
+        "media_path": "COCO_val2014_000000288955.jpg",
+        "references": [
+            "Shaggy dog gets dinner served on a plate.",
+            "A small black dog standing over a plate of food.",
+            "A small dog eating a plate of broccoli.  ",
+            "A black dog being given broccoli to eat.\n",
+            "There is a dog staring at a plate of food"
+        ]
+    },
+    {
+        "_id": 165547,
+        "split": "validate",
+        "candidates": [
+            "living room with a large window"
+        ],
+        "media_path": "COCO_val2014_000000165547.jpg",
+        "references": [
+            "An eating area with a table and a few chairs.",
+            "Table situated in corner of room with a vase for a center piece",
+            "A wooden table sitting below a bunch of windows.",
+            "A dining room table next to windows overlooking woods",
+            "A wooden dining table is surrounded by windows."
+        ]
+    },
+    {
+        "_id": 109005,
+        "split": "validate",
+        "candidates": [
+            "herd of cows are grazing on a lush green field"
+        ],
+        "media_path": "COCO_val2014_000000109005.jpg",
+        "references": [
+            "An elephant and a rhinoceros stand not far from each other.",
+            "A rhino is near an elephant near a water hold in the forest.",
+            "An elephant and a rhinoceros share a field with a pond.",
+            "An elephant and a rhino are grazing in an open wooded area.",
+            "An elephant walking not to far from a rhino in a forest."
+        ]
+    }
+]
