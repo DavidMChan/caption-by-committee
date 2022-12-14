@@ -65,7 +65,7 @@ class BLIPCaptionEngine(CaptionEngine):
     def __call__(self, raw_image: Image, n_captions: int = 1, temperature: Optional[float] = 1.0) -> List[str]:
         image = self._vis_processors["eval"](raw_image).unsqueeze(0).to(self._device)  # type: ignore
 
-        output_captions = []
+        output_captions = [self.get_baseline_caption(raw_image)]
         if n_captions > 1:
             n_captions -= 1  # We'll always add the baseline caption
             # Generate sampled captions
@@ -78,8 +78,6 @@ class BLIPCaptionEngine(CaptionEngine):
                 temperature=temperature or 1.0,
             )
             output_captions = [postprocess_caption(cap) for cap in output_captions]
-
-        output_captions.append(self.get_baseline_caption(raw_image))  # Always add the baseilne caption
 
         return output_captions
 

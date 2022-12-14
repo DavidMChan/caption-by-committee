@@ -12,6 +12,8 @@ $ pip install git+https://github.com/openai/CLIP.git
 $ pip install git+https://github.com/salesforce/LAVIS.git --no-deps
 # Install the local directory with setuptools
 $ pip install .
+# For the metrics, we need to download and install a spacy model
+$ python -m spacy download en_core_web_lg
 ```
 
 Next, we need to set up environment variables with API keys, if you want to use those API keys

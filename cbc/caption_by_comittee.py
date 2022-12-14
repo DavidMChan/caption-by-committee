@@ -1,3 +1,5 @@
+from typing import List
+
 from PIL import Image
 
 from cbc.caption import CaptionEngine
@@ -7,6 +9,15 @@ from cbc.lm import LMEngine
 DEFAULT_CBC_PROMPT = """This is a hard problem. Carefully summarize in ONE detailed sentence the following captions by different (possibly incorrect) people describing the same thing. Be sure to describe everything, and identify when you're not sure. For example:
 Captions: {}.
 Summary:  I'm not sure, but the image is likely of"""
+
+
+def get_prompt_for_candidates(candidates: List[str], prompt: str = DEFAULT_CBC_PROMPT) -> str:
+    """
+    Generate a prompt for a list of candidates.
+    """
+    candidates = [postprocess_caption(c) for c in candidates]
+    candidates_formatted = [f'"{c}"' for c in candidates]
+    return prompt.format(", ".join(candidates_formatted))
 
 
 def caption_by_comittee(
@@ -23,14 +34,6 @@ def caption_by_comittee(
     """
 
     captions = caption_engine(raw_image, n_captions=n_captions, temperature=caption_engine_temperature)
-    # Post-process captions
-    captions = [postprocess_caption(c) for c in captions]
-    captions_formatted = [f'"{c}"' for c in captions]
-
-    # Generate the prompt
-    prompt = lm_prompt.format(", ".join(captions_formatted))
-
-    # Generate the summary
+    prompt = get_prompt_for_candidates(captions, prompt=lm_prompt)
     summary = lm_engine.best(prompt)
-
     return postprocess_caption(summary)
