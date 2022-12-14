@@ -1,4 +1,4 @@
-title: Caption by Comittee: Single Image Captioning Demo
+title: Caption by committee: Single Image Captioning Demo
 emoji: 📚
 colorFrom: blue
 colorTo: yellow

@@ -1,6 +1,6 @@
 import click
 
-from .caption_by_comittee import caption
+from .caption_by_committee import caption
 from .dataset import evaluate_dataset
 
 

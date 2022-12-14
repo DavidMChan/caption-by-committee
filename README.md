@@ -1,4 +1,4 @@
-# Captioning by Comittee
+# Captioning by committee
 
 This is the implementation of the paper: *PAPER TITLE TO COME*.
 
@@ -67,7 +67,7 @@ To use the python API, see the following minimal example using GPT3 and OFA:
 
 ```python
 from cbc.caption import OFACaptionEngine
-from cbc.caption_by_comittee import caption_by_comittee
+from cbc.caption_by_committee import caption_by_committee
 from cbc.lm import GPT3Davinci3
 
 def run_caption() -> None:
@@ -81,7 +81,7 @@ def run_caption() -> None:
     lm_engine = GPT3Davinci3()
 
     # Generate the caption
-    caption = caption_by_comittee(
+    caption = caption_by_committee(
         image,
         caption_engine=caption_engine,
         lm_engine=lm_engine,

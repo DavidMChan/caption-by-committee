@@ -24,7 +24,7 @@ def get_prompt_for_candidates(candidates: List[str], prompt: str = DEFAULT_CBC_P
     return prompt.format(", ".join(candidates_formatted))
 
 
-def caption_by_comittee(
+def caption_by_committee(
     raw_image: Image.Image,
     caption_engine: CaptionEngine,
     lm_engine: LMEngine,
@@ -87,7 +87,7 @@ def caption(
         lm = LM_ENGINES_CLI[lm_engine]()
 
     print("Generating caption...")
-    summary = caption_by_comittee(
+    summary = caption_by_committee(
         image,
         caption_engine=captioner,
         lm_engine=lm,

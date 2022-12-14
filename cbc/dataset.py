@@ -10,7 +10,7 @@ from PIL import Image
 
 from cbc.caption import CAPTION_ENGINES_CLI
 from cbc.caption.utils import postprocess_caption
-from cbc.caption_by_comittee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
+from cbc.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
 from cbc.lm import LM_ENGINES_CLI, LM_LOCAL_ENGINES
 from cbc.metrics import (
     compute_and_add_base_metrics,
