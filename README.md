@@ -54,7 +54,7 @@ Where the JSON format (minimally) looks like:
 ]
 ```
 
-For more details on these commands, see `cbc caption --help` and `cbc evalaute --help`.
+For more details on these commands, see `cbc caption --help` and `cbc evalaute-dataset --help`.
 
 
 ## Running the model as an REST API
