@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from typing import List
 
 from PIL import Image

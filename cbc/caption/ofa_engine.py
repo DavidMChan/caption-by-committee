@@ -9,6 +9,8 @@ from torchvision import transforms
 from cbc.caption.base import CaptionEngine
 from cbc.caption.utils import postprocess_caption
 
+from .ofa import OFAModel, OFATokenizer
+
 _OFA_PATHS = {
     "large-caption": "https://huggingface.co/OFA-Sys/OFA-large-caption",
 }
@@ -37,7 +39,6 @@ class OFACaptionEngine(CaptionEngine):
     def __init__(
         self, ofa_model: str = "large-caption", device: Optional[str] = None, prompt: str = _OFA_DEFAULT_PROMPT
     ):
-        from .ofa import OFAModel, OFATokenizer
 
         tokenizer_path, model_path = _get_ofa_model(ofa_model)
         self.tokenizer = OFATokenizer.from_pretrained(tokenizer_path)

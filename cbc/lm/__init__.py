@@ -2,15 +2,24 @@ from typing import Dict, Set, Type
 
 from .base import LMEngine  # noqa: F401
 from .huggingface_inference_engine import Bloom  # noqa: F401
-from .huggingface_inference_engine import HuggingfaceInferenceLMEngine
+from .huggingface_inference_engine import HuggingfaceInferenceLMEngine  # noqa: F401
 from .huggingface_local_engine import HuggingFaceLocalLMEngine  # noqa: F401
-from .huggingface_local_engine import \
-    HuggingFaceLocalSummaryEngine  # noqa: F401
-from .huggingface_local_engine import (GPT2, GPT2XL, GPTJ6B, DistilGPT2,
-                                       GPT2Lg, GPT2Med, GPTNeo1B, GPTNeo2B,
-                                       GPTNeo125M, Pegasus, T5Base, T5Small)
-from .openai_engine import (GPT3Ada, GPT3Babbage, GPT3Curie,  # noqa: F401
-                            GPT3Davinci2, GPT3Davinci3, OpenAILMEngine)
+from .huggingface_local_engine import HuggingFaceLocalSummaryEngine  # noqa: F401
+from .huggingface_local_engine import (
+    GPT2,
+    GPT2XL,
+    GPTJ6B,
+    DistilGPT2,
+    GPT2Lg,
+    GPT2Med,
+    GPTNeo1B,
+    GPTNeo2B,
+    GPTNeo125M,
+    Pegasus,
+    T5Base,
+    T5Small,
+)
+from .openai_engine import GPT3Ada, GPT3Babbage, GPT3Curie, GPT3Davinci2, GPT3Davinci3, OpenAILMEngine  # noqa: F401
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "GPT-3 (Davinci v3)": GPT3Davinci3,

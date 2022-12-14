@@ -29,7 +29,12 @@ from cbc.lm import LM_ENGINES_CLI, LM_LOCAL_ENGINES
 )
 @click.option("--num-candidates", type=int, default=15, help="Number of candidates to generate for each image.")
 @click.option("--candidate-temperature", type=float, default=1.0, help="Temperature to use when generating candidates.")
-@click.option("--prompt", type=str, default=DEFAULT_CBC_PROMPT, help="The prompt to use when generating candidates.")
+@click.option(
+    "--prompt",
+    type=str,
+    default=DEFAULT_CBC_PROMPT,
+    help="The prompt to use when generating candidates. Will load from a file if it exists.",
+)
 @click.option("--candidate-key", type=str, default="candidates", help="The key to use for the candidates.")
 @click.option("--reference-key", type=str, default="references", help="The key to use for the references.")
 @click.option("--image-path-key", type=str, default="image_path", help="The key to use for the image path.")
@@ -51,6 +56,11 @@ def evaluate_dataset(
     # 1. Load the dataset (references + image paths)
     with open(dataset_json_path, "r") as f:
         samples: List[Dict[str, Any]] = json.load(f)
+
+    # 1.1 Load the prompt (if not already loaded)
+    if os.path.exists(prompt):
+        with open(prompt, "r") as f:
+            prompt = f.read().strip()
 
     # 2. Compute candidate captions for each image (If not already computed)
     captioner = CAPTION_ENGINES_CLI[caption_engine](
