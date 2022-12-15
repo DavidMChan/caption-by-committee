@@ -90,8 +90,7 @@ class OFACaptionEngine(CaptionEngine):
                 )
                 output_captions.append(self.tokenizer.batch_decode(gen, skip_special_tokens=True)[0])
 
-        output_captions = [postprocess_caption(caption.strip()) for caption in output_captions]
-        return output_captions
+        return [postprocess_caption(caption.strip()) for caption in output_captions]
 
     def get_baseline_caption(self, raw_image: Image.Image) -> str:
         patch_image = self._preprocess_image(raw_image)

@@ -34,7 +34,7 @@ def exact_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN"
     query_objects = set([token.text for token in query_doc if token.pos_ in POS])
     targets_objects = set([token.text for token in targets_doc if token.pos_ in POS])
     # Return the recall
-    return float(len(set(query_objects).intersection(set(targets_objects))) / len(set(targets_objects)))
+    return float(len(set(query_objects).intersection(set(targets_objects))) / (len(set(targets_objects)) + 1e-8))
 
 
 def fuzzy_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN",)) -> float:

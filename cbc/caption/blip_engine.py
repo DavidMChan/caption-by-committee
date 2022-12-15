@@ -69,7 +69,7 @@ class BLIPCaptionEngine(CaptionEngine):
         if n_captions > 1:
             n_captions -= 1  # We'll always add the baseline caption
             # Generate sampled captions
-            output_captions = _generate_with_temperature(
+            output_generated = _generate_with_temperature(
                 self._model,
                 {"image": image},
                 num_captions=n_captions,
@@ -77,9 +77,9 @@ class BLIPCaptionEngine(CaptionEngine):
                 top_p=0.9,
                 temperature=temperature or 1.0,
             )
-            output_captions = [postprocess_caption(cap) for cap in output_captions]
+            output_captions += output_generated
 
-        return output_captions
+        return [postprocess_caption(cap) for cap in output_captions]
 
     def get_baseline_caption(self, raw_image: Image) -> str:
         # Generate best beam search caption
