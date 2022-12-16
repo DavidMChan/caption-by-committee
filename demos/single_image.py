@@ -98,7 +98,7 @@ if st.button("Generate Caption"):
 
     # Get the caption engine
     captioner = _get_caption_engine(model)  # type: ignore
-    sm_captioner = _get_caption_engine("socratic_models")  # type: ignore
+    sm_captioner = _get_caption_engine("Socratic Models")  # type: ignore
 
     # Get the summarization engine
     summarizer = _get_lm_engine(engine)  # type: ignore

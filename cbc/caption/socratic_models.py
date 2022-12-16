@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import clip
 import numpy as np
@@ -8,6 +8,7 @@ from PIL.Image import Image
 
 from cbc.caption.base import CaptionEngine
 from cbc.caption.utils import postprocess_caption
+from cbc.lm import LMEngine
 
 _DEFAULT_SM_PROMPT = """I am an intelligent image captioning bot.
     This image is a {img_type}. There {ppl_result}.
@@ -72,7 +73,7 @@ def _load_object_category_text(place_texts: List[str]) -> List[str]:
 class SocraticModelCaptionEngine(CaptionEngine):
     def __init__(
         self,
-        language_model: Any = None,
+        language_model: Union[LMEngine, str] = "gpt3_davinci3",
         clip_version: str = "ViT-L/14",
         device: Optional[str] = None,
         prompt: str = _DEFAULT_SM_PROMPT,
@@ -104,7 +105,9 @@ class SocraticModelCaptionEngine(CaptionEngine):
         self._top_k_objects = top_k_objects
 
         # Setup the language model
-        self._language_model = language_model
+        self._language_model = (
+            language_model if isinstance(language_model, LMEngine) else LMEngine.from_string(language_model)
+        )
         self._device = device
 
     def _get_image_features(self, image: Image) -> torch.Tensor:

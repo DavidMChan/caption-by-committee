@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-ROOT_PATH = "/home/davidchan/Projects/cbc/scripts/output.json"
+ROOT_PATH = "/home/davidchan/Projects/cbc/scripts/output_ofa_hard_mmr_ofa_1.0_15.json"
 
 with open(ROOT_PATH, "r") as jf:
     data = json.load(jf)

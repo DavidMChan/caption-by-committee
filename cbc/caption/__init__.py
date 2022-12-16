@@ -16,5 +16,5 @@ CAPTION_ENGINES_CLI: Dict[str, Type[CaptionEngine]] = {
     "blip": BLIPLarge,
     "blip-base": BLIPBase,
     "ofa": OFACaptionEngine,
-    "socratic": SocraticModelCaptionEngine,
+    "socratic_models": SocraticModelCaptionEngine,
 }
