@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+import sys
 
-ROOT_PATH = "/home/davidchan/Projects/cbc/scripts/output_ofa_hard_mmr_ofa_1.0_15.json"
+ROOT_PATH = sys.argv[1]
 
 with open(ROOT_PATH, "r") as jf:
     data = json.load(jf)

@@ -1,6 +1,6 @@
 import click
 
-from .caption_by_committee import caption
+from .caption_by_committee import caption, video
 from .dataset import evaluate_dataset
 
 
@@ -11,3 +11,4 @@ def main() -> None:
 
 main.add_command(evaluate_dataset)
 main.add_command(caption)
+main.add_command(video)

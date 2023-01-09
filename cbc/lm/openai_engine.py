@@ -2,6 +2,7 @@ import os
 from typing import Any, List, Optional
 
 import openai
+import time
 
 from cbc.lm.base import LMEngine
 
@@ -17,10 +18,20 @@ class OpenAILMEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-        cp = openai.Completion.create(
-            model=self._model, prompt=prompt, temperature=temperature, max_tokens=256, n=n_completions, **kwargs
-        )  # type: ignore
-        return [i.text for i in cp.choices]  # type: ignore
+        error = None
+        for backoff in [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]:
+            try:
+                cp = openai.Completion.create(
+                    model=self._model, prompt=prompt, temperature=temperature, max_tokens=256, n=n_completions, **kwargs
+                )  # type: ignore
+                return [i.text for i in cp.choices]  # type: ignore
+            except Exception as e:
+                # Backoff and try again
+                time.sleep(backoff)
+                error = e
+                continue
+
+        raise error
 
     def best(self, prompt: str) -> str:
         return self(prompt, n_completions=1, temperature=0.0)[0]
