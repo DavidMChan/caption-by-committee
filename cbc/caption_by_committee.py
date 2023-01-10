@@ -3,7 +3,6 @@
 from typing import List
 
 import click
-import cv2
 import torch
 from PIL import Image
 
@@ -15,6 +14,11 @@ from cbc.video_utils import load_video
 DEFAULT_CBC_PROMPT = """This is a hard problem. Carefully summarize in ONE detailed sentence the following captions by different (possibly incorrect) people describing the same thing. Be sure to describe everything, and identify when you're not sure. For example:
 Captions: {}.
 Summary:  I'm not sure, but the image is likely of"""
+
+DEFAULT_CBC_VIDEO_PROMPT = """This is a hard problem. Carefully summarize, in ONE concise sentence, the following captions by different (possibly incorrect) people describing the same short video clip. Be sure to describe the main action, the background, and any relevant details. Some details in the frame descriptions might be WRONG. Remove any repeated or incorrect details.
+For example:
+{}
+Summary: I'm not sure, but the video is likely of"""
 
 
 def get_prompt_for_candidates(candidates: List[str], prompt: str = DEFAULT_CBC_PROMPT) -> str:
@@ -45,6 +49,46 @@ def caption_by_committee(
         print(f"Candidate Captions: {captions}")
     prompt = get_prompt_for_candidates(captions, prompt=lm_prompt)
     summary = lm_engine.best(prompt)
+    return postprocess_caption(summary)
+
+
+def caption_by_committee_video(
+    raw_video: List[Image.Image],
+    caption_engine: CaptionEngine,
+    lm_engine: LMEngine,
+    caption_engine_temperature: float = 1.0,
+    n_captions: int = 5,
+    frame_lm_prompt: str = DEFAULT_CBC_PROMPT,
+    video_lm_prompt: str = DEFAULT_CBC_VIDEO_PROMPT,
+    verbose: bool = False,
+) -> str:
+
+    if verbose:
+        print("Generating captions...")
+
+    all_frame_summaries = []
+    for i, frame in enumerate(raw_video):
+        frame_summary = caption_by_committee(
+            frame,
+            caption_engine=caption_engine,
+            lm_engine=lm_engine,
+            caption_engine_temperature=caption_engine_temperature,
+            n_captions=n_captions,
+            lm_prompt=frame_lm_prompt,
+            verbose=verbose,
+        )
+        all_frame_summaries.append(frame_summary)
+        if verbose:
+            print(f"Frame {i}: {frame_summary}")
+
+    # Summarize the video
+    formatted_frame_summaries = "\n".join([f"Frame {i}: {summary}" for i, summary in enumerate(all_frame_summaries)])
+    video_prompt = video_lm_prompt.format(formatted_frame_summaries)
+    summary = lm_engine.best(video_prompt)
+
+    if verbose:
+        print(video_prompt)
+
     return postprocess_caption(summary)
 
 
@@ -152,25 +196,37 @@ def video(
     # Load the video into a set of frames
     video_frames = load_video(video_path, n_frames)
 
-    print("Generating captions...")
-    all_frame_summaries = []
-    for i, frame in enumerate(video_frames):
-        frame_summary = caption_by_committee(
-            frame,
-            caption_engine=captioner,
-            lm_engine=lm,
-            caption_engine_temperature=candidate_temperature,
-            n_captions=num_candidates,
-            lm_prompt=prompt,
-            verbose=True,
-        )
-        all_frame_summaries.append(frame_summary)
-        print(f"Frame {i}: {frame_summary}")
-
-    # Summarize the video
-    formatted_frame_summaries = "\n".join(
-        [f"Frame {i}: Probably a picture of {summary}" for i, summary in enumerate(all_frame_summaries)]
+    summary = caption_by_committee_video(
+        video_frames,
+        caption_engine=captioner,
+        lm_engine=lm,
+        caption_engine_temperature=candidate_temperature,
+        n_captions=num_candidates,
+        frame_lm_prompt=prompt,
+        verbose=True,
     )
-    video_prompt = f"The frames below are shown in a video. Summarize, in ONE concise sentence, for somebody who cannot see the video, what's happening in the video. Be sure to describe the main action, the background, and any relevant details. Some details in the frame descriptions might be WRONG. Remove any repeated or incorrect details.\n{formatted_frame_summaries}\nSummary: The video clip is probably of"
-    summary = lm.best(video_prompt)
-    print("Caption:", postprocess_caption(summary))
+
+    print("Caption:", summary)
+
+    # print("Generating captions...")
+    # all_frame_summaries = []
+    # for i, frame in enumerate(video_frames):
+    #     frame_summary = caption_by_committee(
+    #         frame,
+    #         caption_engine=captioner,
+    #         lm_engine=lm,
+    #         caption_engine_temperature=candidate_temperature,
+    #         n_captions=num_candidates,
+    #         lm_prompt=prompt,
+    #         verbose=True,
+    #     )
+    #     all_frame_summaries.append(frame_summary)
+    #     print(f"Frame {i}: {frame_summary}")
+
+    # # Summarize the video
+    # formatted_frame_summaries = "\n".join(
+    #     [f"Frame {i}: Probably a picture of {summary}" for i, summary in enumerate(all_frame_summaries)]
+    # )
+    # video_prompt = f"The frames below are shown in a video. Summarize, in ONE concise sentence, for somebody who cannot see the video, what's happening in the video. Be sure to describe the main action, the background, and any relevant details. Some details in the frame descriptions might be WRONG. Remove any repeated or incorrect details.\n{formatted_frame_summaries}\nSummary: The video clip is probably of"
+    # summary = lm.best(video_prompt)
+    # print("Caption:", postprocess_caption(summary))

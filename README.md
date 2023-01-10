@@ -38,6 +38,11 @@ To run the model using the CLI, you can use:
 $ cbc caption <image path>
 ```
 
+To run the model on a video using the CLI, you can use:
+```bash
+$ cbc video <video path>
+```
+
 If you have a full dataset of examples, you can use:
 ```bash
 $ cbc evaluate-dataset <dataset json>
@@ -48,7 +53,7 @@ Where the JSON format (minimally) looks like:
 [
     {
         "references": ["List", "of", "references"],
-        "image_path": "Relative path to image"
+        "image_path": "Relative path to image/video"
     },
     ...
 ]
