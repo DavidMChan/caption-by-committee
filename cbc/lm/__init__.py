@@ -1,8 +1,8 @@
 from typing import Dict, Set, Type
 
 from .base import LMEngine  # noqa: F401
-from .huggingface_inference_engine import Bloom  # noqa: F401
 from .huggingface_inference_engine import HuggingfaceInferenceLMEngine  # noqa: F401
+from .huggingface_inference_engine import OPT, Bloom  # noqa: F401
 from .huggingface_local_engine import HuggingFaceLocalLMEngine  # noqa: F401
 from .huggingface_local_engine import HuggingFaceLocalSummaryEngine  # noqa: F401
 from .huggingface_local_engine import (
@@ -40,6 +40,7 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "T5 (Base)": T5Base,
     "T5 (Small)": T5Small,
     "Pegasus": Pegasus,
+    "OPT (66B)": OPT,
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
@@ -61,6 +62,7 @@ LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "t5_base": T5Base,
     "t5_small": T5Small,
     "pegasus": Pegasus,
+    "opt": OPT,
 }
 
 LM_LOCAL_ENGINES: Set[str] = {

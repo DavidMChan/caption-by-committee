@@ -32,22 +32,18 @@ def _get_image_feature_db(
     samples: List[Dict[str, Any]], image_path_key: str, image_root: Optional[str] = None
 ) -> torch.Tensor:
     features = []
-    for sample in samples:
+    for sample in tqdm.tqdm(samples):
         media_path = os.path.join(image_root or "", sample[image_path_key])
         features.append(_get_feature(media_path))
     return torch.stack(features).to("cpu" if not torch.cuda.is_available() else "cuda:0")
 
-
-def _get_text_features(
-    candidates: List[str], references: List[str], baselines: List[str], char_limit: int = 300
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def _get_text_feature(
+    samples: List[str], char_limit: int = 300
+):
     model, _, device = clip_model()
-
     while True:
         try:
-            candidate_text = clip.tokenize([i[:char_limit] for i in candidates]).to(device)  # type: ignore
-            reference_text = clip.tokenize([i[:char_limit] for i in references]).to(device)  # type: ignore
-            baseline_text = clip.tokenize([i[:char_limit] for i in baselines]).to(device)  # type: ignore
+            text = clip.tokenize([i[:char_limit] for i in samples]).to(device)  # type: ignore
             break
         except RuntimeError:
             # Back off the character limit
@@ -56,14 +52,41 @@ def _get_text_features(
             char_limit -= 20
 
     with torch.no_grad():
-        candidate_text_features = model.encode_text(candidate_text)
-        reference_text_features = model.encode_text(reference_text)
-        baseline_text_features = model.encode_text(baseline_text)
-        candidate_text_features /= candidate_text_features.norm(dim=-1, keepdim=True)
-        reference_text_features /= reference_text_features.norm(dim=-1, keepdim=True)
-        baseline_text_features /= baseline_text_features.norm(dim=-1, keepdim=True)
+        text_features = model.encode_text(text)
+        text_features /= text_features.norm(dim=-1, keepdim=True)
+    return text_features
 
-    return candidate_text_features, reference_text_features, baseline_text_features
+
+def _get_text_features(
+    candidates: List[str], references: List[str], baselines: List[str], char_limit: int = 300
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
+    return _get_text_feature(candidates), _get_text_feature(references), _get_text_feature(baselines)
+
+    # TODO: Remove this if the code still works :)
+    # model, _, device = clip_model()
+
+    # while True:
+    #     try:
+    #         candidate_text = clip.tokenize([i[:char_limit] for i in candidates]).to(device)  # type: ignore
+    #         reference_text = clip.tokenize([i[:char_limit] for i in references]).to(device)  # type: ignore
+    #         baseline_text = clip.tokenize([i[:char_limit] for i in baselines]).to(device)  # type: ignore
+    #         break
+    #     except RuntimeError:
+    #         # Back off the character limit
+    #         if char_limit < 20:
+    #             raise RuntimeError("Could not tokenize text -- too long?")
+    #         char_limit -= 20
+
+    # with torch.no_grad():
+    #     candidate_text_features = model.encode_text(candidate_text)
+    #     reference_text_features = model.encode_text(reference_text)
+    #     baseline_text_features = model.encode_text(baseline_text)
+    #     candidate_text_features /= candidate_text_features.norm(dim=-1, keepdim=True)
+    #     reference_text_features /= reference_text_features.norm(dim=-1, keepdim=True)
+    #     baseline_text_features /= baseline_text_features.norm(dim=-1, keepdim=True)
+
+    # return candidate_text_features, reference_text_features, baseline_text_features
 
 
 def _compute_rank(index: int, feature_db: torch.Tensor, candidate: str, char_limit: int = 300) -> np.ndarray:

@@ -7,7 +7,7 @@ from cbc.lm.base import LMEngine
 
 class HuggingFaceLocalLMEngine(LMEngine):
     def __init__(self, model: str, device: Optional[str] = None):
-        self._generator = pipeline("text-generation", model=model, framework="pt", device=device)
+        self._generator = pipeline("text-generation", model=model, framework="pt", device=1)
 
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
@@ -41,7 +41,7 @@ class HuggingFaceLocalLMEngine(LMEngine):
 
 class HuggingFaceLocalSummaryEngine(LMEngine):
     def __init__(self, model: str, device: Optional[str] = None):
-        self._generator = pipeline("summarization", model=model, framework="pt", device=device)
+        self._generator = pipeline("summarization", model=model, framework="pt", device=0)
 
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any

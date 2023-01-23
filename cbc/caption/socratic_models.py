@@ -14,7 +14,7 @@ _DEFAULT_SM_PROMPT = """I am an intelligent image captioning bot.
     This image is a {img_type}. There {ppl_result}.
     I think this photo was taken at a {sorted_places[0]}, {sorted_places[1]}, or {sorted_places[2]}.
     I think there might be a {object_list} in this {img_type}.
-    A creative short caption I can generate to describe this image is:"""
+    A short, likely caption I can generate to describe this image is:"""
 
 _DEFAULT_SM_IMAGE_TYPES = ["photo", "painting", "drawing", "illustration", "cartoon", "sketch", "painting", "drawing"]
 _DEFAULT_SM_PEOPLE_TYPES = ["people", "no people"]

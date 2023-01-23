@@ -48,6 +48,11 @@ from cbc.metrics import (
 @click.option("--image-path-key", type=str, default="image_path", help="The key to use for the image path.")
 @click.option("--image-root-dir", type=str, default=None, help="The root directory for the images.")
 @click.option("--overwrite-candidates", is_flag=True, help="Whether to overwrite the candidates if they already exist.")
+@click.option(
+    "--overwrite-candidate-summaries",
+    is_flag=True,
+    help="Whether to overwrite the candidate summaries if they already exist.",
+)
 def evaluate_dataset(
     dataset_json_path: str,
     caption_engine: str,
@@ -61,6 +66,7 @@ def evaluate_dataset(
     image_path_key: str,
     image_root_dir: Optional[str] = None,
     overwrite_candidates: bool = False,
+    overwrite_candidate_summaries: bool = False,
 ) -> None:
     # TODO: Implement this
 
@@ -68,6 +74,8 @@ def evaluate_dataset(
     print(f"Loading dataset from {dataset_json_path}...")
     with open(dataset_json_path, "r") as f:
         samples: List[Dict[str, Any]] = json.load(f)
+        if isinstance(samples, dict):
+            samples = samples["samples"]  # type: ignore
 
     # 1.1 Load the prompt (if not already loaded)
     if os.path.exists(prompt):
@@ -92,6 +100,10 @@ def evaluate_dataset(
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
 
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
+
     # 3. Compute the summary captions for each image (both candidate + reference summaries, if not already computed)
     print(f"Loading LM engine {lm_engine}...")
     if lm_engine in LM_LOCAL_ENGINES:
@@ -100,31 +112,52 @@ def evaluate_dataset(
         lm = LM_ENGINES_CLI[lm_engine]()
 
     print(f"Generating summaries using {lm_engine}...")
+    overwrite_candidate_summaries = overwrite_candidate_summaries or overwrite_candidates
     for sample in tqdm.tqdm(samples):
-        if sample.get("candidate_summary") is None or overwrite_candidates:
+        if sample.get("candidate_summary") is None or overwrite_candidate_summaries:
             sample["candidate_summary"] = postprocess_caption(
                 lm.best(prompt=get_prompt_for_candidates(sample[candidate_key], prompt=prompt))
             )
-        if sample.get("reference_summary") is None or overwrite_candidates:
+        if sample.get("reference_summary") is None or overwrite_candidate_summaries:
             sample["reference_summary"] = postprocess_caption(
                 lm.best(prompt=get_prompt_for_candidates(sample[reference_key], prompt=prompt))
             )
+
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
 
     # 4. Compute the metrics (Bleu, ROUGE, METEOR, CIDEr, SPICE) for each image (if not already computed)
     print("Computing base metrics...")
     samples = compute_and_add_base_metrics(samples, reference_key)
 
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
+
     # 5. Compute the overall Mauve score for each set of samples (if not already computed)
     print("Computing Mauve score...")
     samples = compute_and_add_mauve_score(samples, reference_key)
+
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
 
     # 6. Compute the CLIP Recall for each set of candidates (if not already computed)
     print("Computing CLIP recall...")
     samples = compute_and_add_clip_recall(samples, image_path_key, image_root_dir)
 
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
+
     # 7. Compute the Content Recall for each set of candidates (if not already computed)
     print("Computing Content recall...")
     samples = compute_and_add_content_recall(samples, reference_key)
+
+    # Save the output to a temporary file which will persist in case of a crash
+    with open(output_json_path + ".tmp", "w") as f:
+        json.dump(samples, f)
 
     # 8. Aggregate the metrics across all images
     metrics = {
@@ -244,6 +277,10 @@ def evaluate_dataset(
     # 8. Save the results to a JSON file
     with open(output_json_path, "w") as f:
         json.dump({"samples": samples, "metrics": metrics}, f, indent=2)
+
+    # Remove the temporary file
+    if os.path.exists(output_json_path + ".tmp"):
+        os.remove(output_json_path + ".tmp")
 
     # 9. Print the results to the console
     print(json.dumps(metrics, indent=2))
