@@ -22,18 +22,18 @@ def _get_lm_engine(engine_name: str) -> LMEngine:
 
 # Streamlit setup
 st.set_page_config(
-    page_title="CBC: Captioning by Committee for Visual Description",
+    page_title="IC3: Image Captioning by Committee Consensus",
     page_icon="📸",
     layout="centered",
 )
 
 # Streamlit title
-st.title("CBC: Captioning by Committee for Visual Description")
+st.title("IC3: Image Captioning by Committee Consensus")
 
 # Streamlit description
 st.markdown(
     """
-    This is a demo of the paper [Captioning by Committee for Visual Description](https://arxiv.org/abs/2106.00683).
+    This is a demo of the paper IC3: Image Captioning by Committee Consensus.
     """
 )
 
@@ -118,7 +118,7 @@ if st.button("Generate Caption"):
     st.image(uploaded_file, use_column_width=True)
 
     # Display the caption
-    st.caption(f"CBC Caption ({model} + {engine}): {summary}")
+    st.caption(f"IC3 Caption ({model} + {engine}): {summary}")
     st.caption(f"Compare to {model} (baseline, 16 beams): {baseline_caption}")
     st.caption(f"Compare to Socratic Models (baseline): {sm_baseline}")
 

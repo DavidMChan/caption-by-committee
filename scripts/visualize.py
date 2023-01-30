@@ -1,12 +1,12 @@
 import json
 import os
+import sys
 
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
-import sys
 
 ROOT_PATH = sys.argv[1]
 
@@ -363,7 +363,7 @@ for elem in sorted_captions:
         with st.container():
             st.subheader(f"Image: {elem['image_path']}")
             st.image(
-                Image.open(os.path.join("/ssd/coco/coco_val2014/", elem["image_path"])),
+                Image.open(os.path.join("/ssd/flickr30k", elem["image_path"])),
             )
             st.write(f"**Generated Candidate Summary**: _{elem['candidate_summary']}_")
             st.write(f"**Generated Reference Summary**: _{elem['reference_summary']}_")
