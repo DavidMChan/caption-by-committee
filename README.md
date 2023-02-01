@@ -1,6 +1,6 @@
 # Captioning by committee
 
-This is the implementation of the paper: *PAPER TITLE TO COME*.
+This is the implementation of the paper $IC^3$: Image Captioning by Committee Consensus.
 
 
 ## Installation
@@ -61,10 +61,6 @@ Where the JSON format (minimally) looks like:
 
 For more details on these commands, see `cbc caption --help` and `cbc evalaute-dataset --help`.
 
-
-## Running the model as an REST API
-
-*COMING SOON*
 
 ## Using the python API
 
