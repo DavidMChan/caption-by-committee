@@ -1,6 +1,6 @@
 # Captioning by committee
 
-This is the implementation of the paper $IC^3$: Image Captioning by Committee Consensus.
+This is the implementation of the paper [IC3: Image Captioning by Committee Consensus](https://arxiv.org/abs/2302.01328).
 
 
 ## Installation
@@ -106,7 +106,16 @@ To load the demos, install the library, and then use streamlit to run the demo:
 
 If you found this work useful, cite us:
 ```
-{
-
+@misc{
+  https://doi.org/10.48550/arxiv.2302.01328,
+  doi = {10.48550/ARXIV.2302.01328},
+  url = {https://arxiv.org/abs/2302.01328},
+  author = {Chan, David M. and Myers, Austin and Vijayanarasimhan, Sudheendra and Ross, David A. and Canny, John},
+  keywords = {Computer Vision and Pattern Recognition (cs.CV), Artificial Intelligence (cs.AI), Computation and Language (cs.CL), Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {IC3: Image Captioning by Committee Consensus},
+  publisher = {arXiv},
+  year = {2023},
+  copyright = {arXiv.org perpetual, non-exclusive license}
 }
+
 ```
