@@ -19,9 +19,10 @@ from .huggingface_local_engine import (
     T5Base,
     T5Small,
 )
-from .openai_engine import GPT3Ada, GPT3Babbage, GPT3Curie, GPT3Davinci2, GPT3Davinci3, OpenAILMEngine  # noqa: F401
+from .openai_engine import GPT3Ada, GPT3Babbage, GPT3Curie, GPT3Davinci2, GPT3Davinci3, ChatGPT, OpenAILMEngine  # noqa: F401
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
+    "ChatGPT": ChatGPT,
     "GPT-3 (Davinci v3)": GPT3Davinci3,
     "GPT-3 (Davinci v2)": GPT3Davinci2,
     "GPT-3 (Curie)": GPT3Curie,
@@ -44,6 +45,7 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
+    "chatgpt": ChatGPT,
     "gpt3_davinci3": GPT3Davinci3,
     "gpt3_davinci2": GPT3Davinci2,
     "gpt3_curie": GPT3Curie,
