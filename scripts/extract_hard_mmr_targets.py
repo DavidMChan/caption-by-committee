@@ -1,9 +1,9 @@
 import json
 
-with open("/home/davidchan/Projects/cbc/scripts/val_dataset_blip_1.0_15.json", "r") as jf:
+with open("/home/davidchan/Projects/cbc/scripts/val_dataset_blip_1.0_15.json") as jf:
     blip_set = json.load(jf)
 
-with open("/home/davidchan/Projects/cbc/scripts/val_dataset_hard_mmr_ofa_1.0_15.json", "r") as jf:
+with open("/home/davidchan/Projects/cbc/scripts/val_dataset_hard_mmr_ofa_1.0_15.json") as jf:
     val_dataset = json.load(jf)
 
 

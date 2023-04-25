@@ -133,3 +133,11 @@ dmypy.json
 coco_test_images/
 scripts/*.json
 *.json
+.ruff_cache
+*.png
+*.mp4
+*.txt
+*.vtt
+*.jpg
+*.zip
+*.output*

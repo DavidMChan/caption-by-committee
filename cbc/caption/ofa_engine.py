@@ -1,4 +1,6 @@
+import logging
 import os
+import subprocess
 from typing import List, Optional, Tuple
 
 import torch
@@ -8,6 +10,7 @@ from torchvision import transforms
 
 from cbc.caption.base import CaptionEngine
 from cbc.caption.utils import postprocess_caption
+from cbc.utils.python import chdir
 
 from .ofa import OFAModel, OFATokenizer
 
@@ -31,12 +34,30 @@ def _get_ofa_model(model: str) -> Tuple[str, str]:
     # If the repo is already cloned, we can use it
     cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "cbc", model)
     if os.path.exists(cache_dir):
-        return cache_dir, cache_dir
+        # Check to see if the checkpoint files are there...
+        # Check if the size > 1.8GB
+        if os.path.exists(os.path.join(cache_dir, "pytorch_model.bin")):
+            if os.path.getsize(os.path.join(cache_dir, "pytorch_model.bin")) > 1.8e9:  # noqa: PLR2004
+                logging.debug(f"[Fetching OFA] Using cached model at {cache_dir}")
+                return cache_dir, cache_dir
+    else:
+        logging.debug(f"[Fetching OFA] Model not found at {cache_dir}, cloning from {git_repo}")
 
     # Clone the repo into a cache directory
     os.makedirs(cache_dir, exist_ok=True)
     repo = Repo.clone_from(git_repo, cache_dir, branch="main")
     repo.git.checkout("main")
+
+    # Run git lfs pull to download the model files
+    with chdir(cache_dir):
+        logging.debug(f"[Fetching OFA] Running git lfs pull in {cache_dir}...")
+        try:
+            output = subprocess.check_output(["git", "lfs", "pull"])
+            logging.debug(f"[Fetching OFA] git lfs pull output: {str(output)}")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"[Fetching OFA] git lfs pull failed: {e}")
+            raise
+
     return cache_dir, cache_dir
 
 
@@ -87,6 +108,7 @@ class OFACaptionEngine(CaptionEngine):
                     temperature=temperature,
                     no_repeat_ngram_size=3,
                     max_length=256,
+                    num_beams=1,
                 )
                 output_captions.append(self.tokenizer.batch_decode(gen, skip_special_tokens=True)[0])
 

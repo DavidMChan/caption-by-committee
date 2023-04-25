@@ -4,14 +4,14 @@
 # found in the LICENSE file in the root directory.
 
 import math
-from typing import Dict, List, Optional, Tuple
 import sys
+from typing import Dict, List, Optional, Tuple
 
 import torch
-import torch.nn as nn
-from .search import BeamSearch
-from torch import Tensor
+from torch import Tensor, nn
+
 from .ngram_repeat_block import NGramRepeatBlock
+from .search import BeamSearch
 
 
 def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
@@ -52,7 +52,7 @@ class SequenceGenerator(nn.Module):
         gen_code=False,
         gen_box=False,
         ignore_eos=False,
-        zero_shot=False
+        zero_shot=False,
     ):
         """Generates translations of a given source sentence.
 
@@ -83,8 +83,8 @@ class SequenceGenerator(nn.Module):
         self.gen_box = gen_box
         self.ignore_eos = ignore_eos
         self.tokenizer = tokenizer
-        self.tgt_dict = {value: key for key,value in tokenizer.get_vocab().items()}
-        added = {value: key for key,value in tokenizer.get_added_vocab().items()}
+        self.tgt_dict = {value: key for key, value in tokenizer.get_vocab().items()}
+        added = {value: key for key, value in tokenizer.get_added_vocab().items()}
         self.tgt_dict.update(added)
         self.pad = tokenizer.pad_token_id
         self.unk = tokenizer.unk_token_id
@@ -118,15 +118,11 @@ class SequenceGenerator(nn.Module):
 
         assert temperature > 0, "--temperature must be greater than 0"
 
-        self.search = (
-            BeamSearch(self.tokenizer) if search_strategy is None else search_strategy
-        )
+        self.search = BeamSearch(self.tokenizer) if search_strategy is None else search_strategy
         # We only need to set src_lengths in LengthConstrainedBeamSearch.
         # As a module attribute, setting it would break in multithread
         # settings when the model is shared.
-        self.should_set_src_lengths = (
-            hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
-        )
+        self.should_set_src_lengths = hasattr(self.search, "needs_src_lengths") and self.search.needs_src_lengths
 
         # self.model.eval()
 
@@ -140,10 +136,9 @@ class SequenceGenerator(nn.Module):
         self.constraint_start = None
         self.constraint_end = None
         if constraint_range is not None:
-            constraint_start, constraint_end = constraint_range.split(',')
+            constraint_start, constraint_end = constraint_range.split(",")
             self.constraint_start = int(constraint_start)
             self.constraint_end = int(constraint_end)
-
 
     @torch.no_grad()
     def forward(
@@ -190,25 +185,18 @@ class SequenceGenerator(nn.Module):
         model = EnsembleModel(models)
         incremental_states = torch.jit.annotate(
             List[Tuple[Tuple[torch.Tensor]]],
-            [
-                torch.jit.annotate(Tuple[Tuple[torch.Tensor]], {})
-                for i in range(model.models_size)
-            ],
+            [torch.jit.annotate(Tuple[Tuple[torch.Tensor]], {}) for i in range(model.models_size)],
         )
         net_input = sample["net_input"]
 
         if "src_tokens" in net_input:
             src_tokens = net_input["src_tokens"]
             # length of the source text being the character length except EndOfSentence and pad
-            src_lengths = (
-                (src_tokens.ne(self.eos) & src_tokens.ne(self.pad)).long().sum(dim=1)
-            )
+            src_lengths = (src_tokens.ne(self.eos) & src_tokens.ne(self.pad)).long().sum(dim=1)
         elif "input_ids" in net_input:
             src_tokens = net_input["input_ids"]
             # length of the source text being the character length except EndOfSentence and pad
-            src_lengths = (
-                (src_tokens.ne(self.eos) & src_tokens.ne(self.pad)).long().sum(dim=1)
-            )
+            src_lengths = (src_tokens.ne(self.eos) & src_tokens.ne(self.pad)).long().sum(dim=1)
         elif "source" in net_input:
             src_tokens = net_input["source"]
             src_lengths = (
@@ -232,9 +220,7 @@ class SequenceGenerator(nn.Module):
         beam_size = self.beam_size
 
         if constraints is not None and not self.search.supports_constraints:
-            raise NotImplementedError(
-                "Target-side constraints were provided, but search method doesn't support them"
-            )
+            raise NotImplementedError("Target-side constraints were provided, but search method doesn't support them")
 
         # Initialize constraints, when active
         self.search.init_constraints(constraints, beam_size)
@@ -244,9 +230,7 @@ class SequenceGenerator(nn.Module):
             max_len = src_lengths.max().item()
         else:
             max_len = int(self.max_len_a * src_len + self.max_len_b)
-        assert (
-            self.min_len <= max_len
-        ), "min_len cannot be larger than max_len, please adjust these!"
+        assert self.min_len <= max_len, "min_len cannot be larger than max_len, please adjust these!"
         # compute the encoder output for each beam
         with torch.autograd.profiler.record_function("EnsembleModel: forward_encoder"):
             encoder_outs = model.forward_encoder(net_input)
@@ -262,12 +246,7 @@ class SequenceGenerator(nn.Module):
         scores = (
             torch.zeros(bsz * beam_size, max_len + 1).to(src_tokens).float()
         )  # +1 for eos; pad is never chosen for scoring
-        tokens = (
-            torch.zeros(bsz * beam_size, max_len + 2)
-            .to(src_tokens)
-            .long()
-            .fill_(self.pad)
-        )  # +2 for eos and pad
+        tokens = torch.zeros(bsz * beam_size, max_len + 2).to(src_tokens).long().fill_(self.pad)  # +2 for eos and pad
         # tokens[:, 0] = self.eos if bos_token is None else bos_token
         tokens[:, 0] = self.bos
         attn: Optional[Tensor] = None
@@ -294,12 +273,7 @@ class SequenceGenerator(nn.Module):
         cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
 
         # offset arrays for converting between different indexing schemes
-        bbsz_offsets = (
-            (torch.arange(0, bsz) * beam_size)
-            .unsqueeze(1)
-            .type_as(tokens)
-            .to(src_tokens.device)
-        )
+        bbsz_offsets = (torch.arange(0, bsz) * beam_size).unsqueeze(1).type_as(tokens).to(src_tokens.device)
         cand_offsets = torch.arange(0, cand_size).type_as(tokens).to(src_tokens.device)
 
         reorder_state: Optional[Tensor] = None
@@ -316,17 +290,11 @@ class SequenceGenerator(nn.Module):
             if reorder_state is not None:
                 if batch_idxs is not None:
                     # update beam indices to take into account removed sentences
-                    corr = batch_idxs - torch.arange(batch_idxs.numel()).type_as(
-                        batch_idxs
-                    )
-                    reorder_state.view(-1, beam_size).add_(
-                        corr.unsqueeze(-1) * beam_size
-                    )
+                    corr = batch_idxs - torch.arange(batch_idxs.numel()).type_as(batch_idxs)
+                    reorder_state.view(-1, beam_size).add_(corr.unsqueeze(-1) * beam_size)
                     original_batch_idxs = original_batch_idxs[batch_idxs]
                 model.reorder_incremental_state(incremental_states, reorder_state)
-                encoder_outs = model.reorder_encoder_out(
-                    encoder_outs, reorder_state
-                )
+                encoder_outs = model.reorder_encoder_out(encoder_outs, reorder_state)
 
             with torch.autograd.profiler.record_function("EnsembleModel: forward_decoder"):
                 lprobs, avg_attn_scores = model.forward_decoder(
@@ -339,25 +307,17 @@ class SequenceGenerator(nn.Module):
                     constraint_end=self.constraint_end,
                     gen_code=self.gen_code,
                     zero_shot=self.zero_shot,
-                    prefix_tokens=prefix_tokens
+                    prefix_tokens=prefix_tokens,
                 )
 
             if self.lm_model is not None:
                 lm_out = self.lm_model(tokens[:, : step + 1])
-                probs = self.lm_model.get_normalized_probs(
-                    lm_out, log_probs=True, sample=None
-                )
+                probs = self.lm_model.get_normalized_probs(lm_out, log_probs=True, sample=None)
                 probs = probs[:, -1, :] * self.lm_weight
                 lprobs += probs
             # handle prefix tokens (possibly with different lengths)
-            if (
-                prefix_tokens is not None
-                and step < prefix_tokens.size(1)
-                and step < max_len
-            ):
-                lprobs, tokens, scores = self._prefix_tokens(
-                    step, lprobs, scores, tokens, prefix_tokens, beam_size
-                )
+            if prefix_tokens is not None and step < prefix_tokens.size(1) and step < max_len:
+                lprobs, tokens, scores = self._prefix_tokens(step, lprobs, scores, tokens, prefix_tokens, beam_size)
             elif step < self.min_len:
                 # minimum length constraint (does not apply if using prefix_tokens)
                 lprobs[:, self.eos] = -math.inf
@@ -372,7 +332,7 @@ class SequenceGenerator(nn.Module):
             if self.gen_box:
                 lprobs[:, -1] = -math.inf
                 if (step + 1) % 5 == 0:
-                    lprobs[:, self.constraint_start:59457] = -math.inf
+                    lprobs[:, self.constraint_start : 59457] = -math.inf
                 else:
                     lprobs[:, 59457:] = -math.inf
 
@@ -386,18 +346,12 @@ class SequenceGenerator(nn.Module):
             # Record attention scores, only support avg_attn_scores is a Tensor
             if avg_attn_scores is not None:
                 if attn is None:
-                    attn = torch.empty(
-                        bsz * beam_size, avg_attn_scores.size(1), max_len + 2
-                    ).to(scores)
+                    attn = torch.empty(bsz * beam_size, avg_attn_scores.size(1), max_len + 2).to(scores)
                 attn[:, :, step + 1].copy_(avg_attn_scores)
 
             scores = scores.type_as(lprobs)
-            eos_bbsz_idx = torch.empty(0).to(
-                tokens
-            )  # indices of hypothesis ending with eos (finished sentences)
-            eos_scores = torch.empty(0).to(
-                scores
-            )  # scores of hypothesis ending with eos (finished sentences)
+            eos_bbsz_idx = torch.empty(0).to(tokens)  # indices of hypothesis ending with eos (finished sentences)
+            eos_scores = torch.empty(0).to(scores)  # scores of hypothesis ending with eos (finished sentences)
 
             if self.should_set_src_lengths:
                 self.search.set_src_lengths(src_lengths)
@@ -427,15 +381,11 @@ class SequenceGenerator(nn.Module):
             # only consider eos when it's among the top beam_size indices
             # Now we know what beam item(s) to finish
             # Shape: 1d list of absolute-numbered
-            eos_bbsz_idx = torch.masked_select(
-                cand_bbsz_idx[:, :beam_size], mask=eos_mask[:, :beam_size]
-            )
+            eos_bbsz_idx = torch.masked_select(cand_bbsz_idx[:, :beam_size], mask=eos_mask[:, :beam_size])
 
             finalized_sents: List[int] = []
             if eos_bbsz_idx.numel() > 0:
-                eos_scores = torch.masked_select(
-                    cand_scores[:, :beam_size], mask=eos_mask[:, :beam_size]
-                )
+                eos_scores = torch.masked_select(cand_scores[:, :beam_size], mask=eos_mask[:, :beam_size])
 
                 finalized_sents = self.finalize_hypos(
                     step,
@@ -465,14 +415,10 @@ class SequenceGenerator(nn.Module):
                 new_bsz = bsz - len(finalized_sents)
 
                 # construct batch_idxs which holds indices of batches to keep for the next pass
-                batch_mask = torch.ones(
-                    bsz, dtype=torch.bool, device=cand_indices.device
-                )
+                batch_mask = torch.ones(bsz, dtype=torch.bool, device=cand_indices.device)
                 batch_mask[finalized_sents] = False
 
-                batch_idxs = torch.arange(
-                    bsz, device=cand_indices.device
-                ).masked_select(batch_mask)
+                batch_idxs = torch.arange(bsz, device=cand_indices.device).masked_select(batch_mask)
 
                 # Choose the subset of the hypothesized constraints that will continue
                 self.search.prune_sentences(batch_idxs)
@@ -492,9 +438,7 @@ class SequenceGenerator(nn.Module):
                 scores = scores.view(bsz, -1)[batch_idxs].view(new_bsz * beam_size, -1)
                 tokens = tokens.view(bsz, -1)[batch_idxs].view(new_bsz * beam_size, -1)
                 if attn is not None:
-                    attn = attn.view(bsz, -1)[batch_idxs].view(
-                        new_bsz * beam_size, attn.size(1), -1
-                    )
+                    attn = attn.view(bsz, -1)[batch_idxs].view(new_bsz * beam_size, attn.size(1), -1)
                 bsz = new_bsz
             else:
                 batch_idxs = None
@@ -516,9 +460,7 @@ class SequenceGenerator(nn.Module):
             # {active_hypos} indicates which {beam_size} hypotheses
             # from the list of {2 * beam_size} candidates were
             # selected. Shapes: (batch size, beam size)
-            new_cands_to_ignore, active_hypos = torch.topk(
-                active_mask, k=beam_size, dim=1, largest=False
-            )
+            new_cands_to_ignore, active_hypos = torch.topk(active_mask, k=beam_size, dim=1, largest=False)
 
             # update cands_to_ignore to ignore any finalized hypos.
             cands_to_ignore = new_cands_to_ignore.ge(cand_size)[:, :beam_size]
@@ -538,48 +480,32 @@ class SequenceGenerator(nn.Module):
             # copy tokens and scores for active hypotheses
 
             # Set the tokens for each beam (can select the same row more than once)
-            tokens[:, : step + 1] = torch.index_select(
-                tokens[:, : step + 1], dim=0, index=active_bbsz_idx
-            )
+            tokens[:, : step + 1] = torch.index_select(tokens[:, : step + 1], dim=0, index=active_bbsz_idx)
             # Select the next token for each of them
-            tokens.view(bsz, beam_size, -1)[:, :, step + 1] = torch.gather(
-                cand_indices, dim=1, index=active_hypos
-            )
+            tokens.view(bsz, beam_size, -1)[:, :, step + 1] = torch.gather(cand_indices, dim=1, index=active_hypos)
             if step > 0:
-                scores[:, :step] = torch.index_select(
-                    scores[:, :step], dim=0, index=active_bbsz_idx
-                )
-            scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(
-                cand_scores, dim=1, index=active_hypos
-            )
+                scores[:, :step] = torch.index_select(scores[:, :step], dim=0, index=active_bbsz_idx)
+            scores.view(bsz, beam_size, -1)[:, :, step] = torch.gather(cand_scores, dim=1, index=active_hypos)
 
             # Update constraints based on which candidates were selected for the next beam
             self.search.update_constraints(active_hypos)
 
             # copy attention for active hypotheses
             if attn is not None:
-                attn[:, :, : step + 2] = torch.index_select(
-                    attn[:, :, : step + 2], dim=0, index=active_bbsz_idx
-                )
+                attn[:, :, : step + 2] = torch.index_select(attn[:, :, : step + 2], dim=0, index=active_bbsz_idx)
 
             # reorder incremental state in decoder
             reorder_state = active_bbsz_idx
 
         # sort by score descending
         for sent in range(len(finalized)):
-            scores = torch.tensor(
-                [float(elem["score"].item()) for elem in finalized[sent]]
-            )
+            scores = torch.tensor([float(elem["score"].item()) for elem in finalized[sent]])
             _, sorted_scores_indices = torch.sort(scores, descending=True)
             finalized[sent] = [finalized[sent][ssi] for ssi in sorted_scores_indices]
-            finalized[sent] = torch.jit.annotate(
-                List[Dict[str, Tensor]], finalized[sent]
-            )
+            finalized[sent] = torch.jit.annotate(List[Dict[str, Tensor]], finalized[sent])
         return finalized
 
-    def _prefix_tokens(
-        self, step: int, lprobs, scores, tokens, prefix_tokens, beam_size: int
-    ):
+    def _prefix_tokens(self, step: int, lprobs, scores, tokens, prefix_tokens, beam_size: int):
         """Handle prefix tokens"""
         prefix_toks = prefix_tokens[:, step].unsqueeze(-1).repeat(1, beam_size).view(-1)
         prefix_lprobs = lprobs.gather(-1, prefix_toks.unsqueeze(-1))
@@ -596,9 +522,7 @@ class SequenceGenerator(nn.Module):
         eos_mask = prefix_toks.eq(self.eos)
         if eos_mask.any():
             # validate that the first beam matches the prefix
-            first_beam = tokens[eos_mask].view(-1, beam_size, tokens.size(-1))[
-                :, 0, 1 : step + 1
-            ]
+            first_beam = tokens[eos_mask].view(-1, beam_size, tokens.size(-1))[:, 0, 1 : step + 1]
             eos_mask_batch_dim = eos_mask.view(-1, beam_size)[:, 0]
             target_prefix = prefix_tokens[eos_mask_batch_dim][:, :step]
             assert (first_beam == target_prefix).all()
@@ -641,16 +565,10 @@ class SequenceGenerator(nn.Module):
         # clone relevant token and attention tensors.
         # tokens is (batch * beam, max_len). So the index_select
         # gets the newly EOS rows, then selects cols 1..{step + 2}
-        tokens_clone = tokens.index_select(0, bbsz_idx)[
-            :, 1 : step + 2
-        ]  # skip the first index, which is EOS
+        tokens_clone = tokens.index_select(0, bbsz_idx)[:, 1 : step + 2]  # skip the first index, which is EOS
 
         tokens_clone[:, step] = self.eos
-        attn_clone = (
-            attn.index_select(0, bbsz_idx)[:, :, 1 : step + 2]
-            if attn is not None
-            else None
-        )
+        attn_clone = attn.index_select(0, bbsz_idx)[:, :, 1 : step + 2] if attn is not None else None
 
         # compute scores per token position
         pos_scores = scores.index_select(0, bbsz_idx)[:, : step + 1]
@@ -754,7 +672,6 @@ class EnsembleModel(nn.Module):
         self.single_model = models[0]
         self.models = nn.ModuleList(models)
 
-
         self.has_incremental = True
 
     def forward(self):
@@ -767,15 +684,15 @@ class EnsembleModel(nn.Module):
         return self.has_incremental
 
     def max_decoder_positions(self):
-        return min([m.max_decoder_positions() for m in self.models if hasattr(m, "max_decoder_positions")] + [sys.maxsize])  #
+        return min(
+            [m.max_decoder_positions() for m in self.models if hasattr(m, "max_decoder_positions")] + [sys.maxsize]
+        )  #
 
     @torch.jit.export
     def forward_encoder(self, net_input: Dict[str, Tensor]):
         if not self.has_encoder():
             return None
-        encoder_input = {
-            k: v for k, v in net_input.items() if k != "decoder_input_ids"
-        }
+        encoder_input = {k: v for k, v in net_input.items() if k != "decoder_input_ids"}
         encoder_input["output_hidden_states"] = True
         return [model.encoder.forward(**encoder_input) for model in self.models]
 
@@ -791,24 +708,24 @@ class EnsembleModel(nn.Module):
         constraint_end=None,
         gen_code=False,
         zero_shot=False,
-        prefix_tokens=None
+        prefix_tokens=None,
     ):
         log_probs = []
         avg_attn: Optional[Tensor] = None
         encoder_out: Optional[Dict[str, List[Tensor]]] = None
-        code_mask = (tokens.new_ones(tokens.size(0))*gen_code).bool()
+        code_mask = (tokens.new_ones(tokens.size(0)) * gen_code).bool()
 
         for i, model in enumerate(self.models):
             if self.has_encoder():
                 encoder_out = encoder_outs[i]
                 encoder_hidden_states = encoder_out.last_hidden_state
-                encoder_attention_mask = _expand_mask(~encoder_out.padding_mask, encoder_hidden_states.dtype,
-                                                      tokens.shape[-1])
+                encoder_attention_mask = _expand_mask(
+                    ~encoder_out.padding_mask, encoder_hidden_states.dtype, tokens.shape[-1]
+                )
                 src_pos_embed = encoder_out.position_embedding
 
                 # if tokens.eq(self.single_model.config.pad_token_id).any():
                 attention_mask = ~tokens.eq(self.single_model.padding_idx)
-
 
             # decode each model
             if self.has_incremental_states():
@@ -821,21 +738,20 @@ class EnsembleModel(nn.Module):
                     src_pos_embed=src_pos_embed,
                     past_key_values=incremental_states[i],
                     use_cache=True,
-                    output_attentions = True
+                    output_attentions=True,
                 )
             else:
                 if hasattr(model, "decoder"):
                     decoder_out = model.decoder.forward(
-                    input_ids=tokens,
-                    attention_mask=attention_mask,
-                    encoder_hidden_states=encoder_hidden_states,
-                    encoder_attention_mask=encoder_attention_mask,
-                    code_masks=code_mask,
-                    src_pos_embed=src_pos_embed
-                )
+                        input_ids=tokens,
+                        attention_mask=attention_mask,
+                        encoder_hidden_states=encoder_hidden_states,
+                        encoder_attention_mask=encoder_attention_mask,
+                        code_masks=code_mask,
+                        src_pos_embed=src_pos_embed,
+                    )
                 else:
                     decoder_out = model.forward(tokens)
-
 
             attn: Optional[Tensor] = None
             decoder_len = len(decoder_out)
@@ -845,7 +761,6 @@ class EnsembleModel(nn.Module):
                 attn = attn.mean(dim=0)  # (B, tgt_len, src_len)
                 if attn is not None:
                     attn = attn[:, -1, :]
-
 
             decoder_out_tuple = (
                 decoder_out[0][:, -1:, :].div_(temperature),
@@ -858,9 +773,11 @@ class EnsembleModel(nn.Module):
                 constraint_masks = decoder_out_tuple[0].new_zeros(decoder_out_tuple[0].size()).bool()
                 constraint_prefix_tokens = tokens.tolist()
                 for token_index, constraint_prefix_token in enumerate(constraint_prefix_tokens):
-                    prefix_len = prefix_tokens[token_index // beam_size].ne(1).sum().item() if prefix_tokens is not None else 0
+                    prefix_len = (
+                        prefix_tokens[token_index // beam_size].ne(1).sum().item() if prefix_tokens is not None else 0
+                    )
                     if len(constraint_prefix_token) > prefix_len:
-                        constraint_prefix_token = [0] + constraint_prefix_token[prefix_len+1:]
+                        constraint_prefix_token = [0] + constraint_prefix_token[prefix_len + 1 :]
                         constraint_nodes = constraint_trie.get_next_layer(constraint_prefix_token)
                         constraint_masks[token_index][:, constraint_nodes] = True
                     else:
@@ -871,9 +788,7 @@ class EnsembleModel(nn.Module):
                 decoder_out_tuple[0][:, :, 4:constraint_start] = -math.inf
                 decoder_out_tuple[0][:, :, constraint_end:] = -math.inf
 
-            probs = model.get_normalized_probs(
-                decoder_out_tuple, log_probs=True, sample=None
-            )
+            probs = model.get_normalized_probs(decoder_out_tuple, log_probs=True, sample=None)
             if constraint_trie is not None and zero_shot:
                 assert constraint_start is None and constraint_end is None
                 constraint_masks = decoder_out_tuple[0].new_zeros(decoder_out_tuple[0].size()).bool()
@@ -897,18 +812,14 @@ class EnsembleModel(nn.Module):
                 else:
                     avg_attn.add_(attn)
 
-        avg_probs = torch.logsumexp(torch.stack(log_probs, dim=0), dim=0) - math.log(
-            self.models_size
-        )
+        avg_probs = torch.logsumexp(torch.stack(log_probs, dim=0), dim=0) - math.log(self.models_size)
 
         if avg_attn is not None:
             avg_attn.div_(self.models_size)
         return avg_probs, avg_attn
 
     @torch.jit.export
-    def reorder_encoder_out(
-        self, encoder_outs: Optional[List[Dict[str, List[Tensor]]]], new_order
-    ):
+    def reorder_encoder_out(self, encoder_outs: Optional[List[Dict[str, List[Tensor]]]], new_order):
         """
         Reorder encoder output according to *new_order*.
 
@@ -924,9 +835,7 @@ class EnsembleModel(nn.Module):
             return new_outs
         for i, model in enumerate(self.models):
             assert encoder_outs is not None
-            new_outs.append(
-                model.encoder.reorder_encoder_out(encoder_outs[i], new_order)
-            )
+            new_outs.append(model.encoder.reorder_encoder_out(encoder_outs[i], new_order))
         return new_outs
 
     @torch.jit.export
@@ -938,7 +847,4 @@ class EnsembleModel(nn.Module):
         if not self.has_incremental_states():
             return
         for i, model in enumerate(self.models):
-            model.decoder.reorder_incremental_state_scripting(
-                incremental_states[i], new_order
-            )
-
+            model.decoder.reorder_incremental_state_scripting(incremental_states[i], new_order)

@@ -3,7 +3,7 @@ import json
 
 def main() -> None:
     # 1. Load the Karpathy split of the MSCOCO dataset
-    with open("./dataset_coco.json", "r") as f:
+    with open("./dataset_coco.json") as f:
         dataset = json.load(f)
 
     # 2. Construct a simple JSON file with the image paths and references for the validation set

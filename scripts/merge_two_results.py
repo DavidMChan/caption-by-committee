@@ -1,10 +1,10 @@
 import json
 import sys
 
-with open(sys.argv[1], "r") as jf:
+with open(sys.argv[1]) as jf:
     data = json.load(jf)["samples"]
 
-with open(sys.argv[2], "r") as jf:
+with open(sys.argv[2]) as jf:
     data2 = json.load(jf)["samples"]
 
 outputs = []

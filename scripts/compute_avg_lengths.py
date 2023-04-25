@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-with open("/home/davidchan/Projects/cbc/scripts/val_dataset_hard_mmr_merged_v3_blip_1.0_10.json", "r") as jf:
+with open("/home/davidchan/Projects/cbc/scripts/val_dataset_hard_mmr_merged_v3_blip_1.0_10.json") as jf:
     data = json.load(jf)["samples"]
 
 print(np.mean([len(d["candidate_summary"]) for d in data]))

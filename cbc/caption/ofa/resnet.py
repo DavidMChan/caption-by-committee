@@ -1,8 +1,7 @@
-# coding=utf-8
 # Copyright 2022 The OFA-Sys Team. All rights reserved.
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 def drop_path(x, drop_prob: float = 0.0, training: bool = False):
@@ -27,7 +26,7 @@ class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
     def __init__(self, drop_prob=None):
-        super(DropPath, self).__init__()
+        super().__init__()
         self.drop_prob = drop_prob
 
     def forward(self, x):
@@ -59,7 +58,7 @@ class BasicBlock(nn.Module):
     def __init__(
         self, inplanes, planes, stride=1, downsample=None, groups=1, base_width=64, dilation=1, norm_layer=None
     ):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
@@ -116,7 +115,7 @@ class Bottleneck(nn.Module):
         norm_layer=None,
         drop_path_rate=0.0,
     ):
-        super(Bottleneck, self).__init__()
+        super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         width = int(planes * (base_width / 64.0)) * groups
@@ -166,7 +165,7 @@ class ResNet(nn.Module):
         norm_layer=None,
         drop_path_rate=0.0,
     ):
-        super(ResNet, self).__init__()
+        super().__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer

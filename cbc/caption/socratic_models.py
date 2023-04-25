@@ -1,8 +1,9 @@
+import logging
 import os
-from typing import Any, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
-import clip
 import numpy as np
+import open_clip
 import torch
 from PIL.Image import Image
 
@@ -35,13 +36,13 @@ def _load_places_text() -> List[str]:
     place_texts = []
 
     for place in place_categories[:, 0]:
-        place = place.split("/")[2:]
-        if len(place) > 1:
-            place = place[1] + " " + place[0]
+        factored_place = place.split("/")[2:]
+        if len(factored_place) > 1:
+            factored_place = factored_place[1] + " " + factored_place[0]
         else:
-            place = place[0]
-        place = place.replace("_", " ")
-        place_texts.append(place)
+            factored_place = factored_place[0]
+        factored_place = factored_place.replace("_", " ")
+        place_texts.append(factored_place)
 
     return place_texts
 
@@ -49,15 +50,14 @@ def _load_places_text() -> List[str]:
 def _load_object_category_text(place_texts: List[str]) -> List[str]:
     with open(
         os.path.join(os.path.dirname(__file__), "socratic_models_data", "dictionary_and_semantic_hierarchy.txt"),
-        "r",
     ) as f:
         object_categories = f.readlines()
     object_texts = []
     for object_text in object_categories[1:]:
-        object_text = object_text.strip()
-        object_text = object_text.split("\t")[3]
+        object_text_factored = object_text.strip()
+        object_text_factored = object_text_factored.split("\t")[3]
         safe_list = ""
-        for variant in object_text.split(","):
+        for variant in object_text_factored.split(","):
             text = variant.strip()
             safe_list += f"{text}, "
         safe_list = safe_list[:-2]
@@ -84,7 +84,10 @@ class SocraticModelCaptionEngine(CaptionEngine):
         top_k_objects: int = 10,
     ):
         # Initialize the CLIP model
-        self._clip_model, self._clip_preprocess = clip.load(clip_version, device=device)  # type: ignore
+        self._clip_model, _, self._clip_preprocess = open_clip.create_model_and_transforms(
+            "ViT-g-14", pretrained="laion2b_s12b_b42k", device=device
+        )
+        self._clip_tokenizer = open_clip.get_tokenizer("ViT-g-14")
 
         # Load the cached features
         self._place_texts = _load_places_text()
@@ -122,7 +125,7 @@ class SocraticModelCaptionEngine(CaptionEngine):
         return image_features
 
     def _get_text_features(self, input_text: List[str], batch_size: int = 64) -> torch.Tensor:
-        text_tokens = clip.tokenize(input_text).to(self._device)  # type: ignore
+        text_tokens = self._clip_tokenizer(input_text).to(self._device)  # type: ignore
         text_id = 0
 
         output_text_features = []
@@ -209,10 +212,11 @@ class SocraticModelCaptionEngine(CaptionEngine):
 
     def __call__(self, raw_image: Image, n_captions: int = 1, temperature: Optional[float] = 1.0) -> List[str]:
         prompt = self._get_prompt(raw_image)
-        print(prompt)
+        logging.debug(prompt)
         # Generate captions using the language model
         return [
-            postprocess_caption(p) for p in self._language_model(prompt, n_capitons=n_captions, temperature=temperature)
+            postprocess_caption(p)
+            for p in self._language_model(prompt, n_completions=n_captions, temperature=temperature)
         ]
 
     def get_baseline_caption(self, raw_image: Image) -> str:

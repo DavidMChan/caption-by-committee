@@ -1,16 +1,25 @@
 import json
 import os
 import sys
+from typing import Any, List
 
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+from streamlit.delta_generator import DeltaGenerator
 
 ROOT_PATH = sys.argv[1]
 
-with open(ROOT_PATH, "r") as jf:
+if "flickr" in ROOT_PATH:
+    FILE_PATH = "/ssd/flickr30k/"
+elif "textcaps" in ROOT_PATH:
+    FILE_PATH = "/ssd/textcaps"
+else:
+    FILE_PATH = "/ssd/coco/coco_val2014"
+
+with open(ROOT_PATH) as jf:
     data = json.load(jf)
     generated_captions = data["samples"]
 
@@ -19,7 +28,7 @@ with open(ROOT_PATH, "r") as jf:
 st.header(f"Visualizing Results: {ROOT_PATH}")
 
 
-def _stm(display, metric, cd, caps):
+def _stm(display: str, metric: str, cd: str, caps: List[Any]) -> DeltaGenerator:
     mean_value = np.mean([i["scores"][f"{cd}{metric}"] for i in caps])
     diff = mean_value - np.mean([i["scores"][f"baseline{metric}"] for i in caps])
     return st.metric(display, f"{mean_value:.3f}", f"{diff:+.3f}")
@@ -352,18 +361,22 @@ score = st.selectbox("Select a score to sort by", list(score_lambdas.keys()))
 # Increasing or decreasing
 sort_order = st.selectbox("Select a sort order", ["Increasing", "Decreasing"])
 
-sorted_captions = sorted(generated_captions, key=score_lambdas[score], reverse=sort_order == "Decreasing")
+sorted_captions = sorted(
+    generated_captions,
+    key=score_lambdas[score] if score is not None else lambda x: 0,
+    reverse=sort_order == "Decreasing",
+)
 
 # Spacer
 st.write("")
 st.write("")
 
 for elem in sorted_captions:
-    with st.expander(f'COCO val {elem["image_path"]}'):
+    with st.expander(f'{elem["image_path"]}'):
         with st.container():
             st.subheader(f"Image: {elem['image_path']}")
             st.image(
-                Image.open(os.path.join("/ssd/flickr30k", elem["image_path"])),
+                Image.open(os.path.join(FILE_PATH, elem["image_path"])),
             )
             st.write(f"**Generated Candidate Summary**: _{elem['candidate_summary']}_")
             st.write(f"**Generated Reference Summary**: _{elem['reference_summary']}_")

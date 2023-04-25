@@ -1,26 +1,34 @@
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-import clip
 import numpy as np
+import open_clip
 import torch
 import tqdm
 from PIL import Image
 
 _CLIP_MODEL = None
 _CLIP_PREPROCESS = None
+_CLIP_TOKENIZER = None
+
+_CLIP_BACKOFF_CHARACTER_STEPS = 20
 
 
-def clip_model() -> Tuple[Any, Any, str]:
+def clip_model() -> Tuple[Any, Any, Any, str]:
     global _CLIP_MODEL
     global _CLIP_PREPROCESS
+    global _CLIP_TOKENIZER
     if _CLIP_MODEL is None:
-        _CLIP_MODEL, _CLIP_PREPROCESS = clip.load("ViT-L/14", device="cuda:0" if torch.cuda.is_available() else "cpu")
-    return _CLIP_MODEL, _CLIP_PREPROCESS, "cuda:0" if torch.cuda.is_available() else "cpu"
+        # _CLIP_MODEL, _CLIP_PREPROCESS = clip.load("ViT-L/14", device="cuda:0" if torch.cuda.is_available() else "cpu")
+        _CLIP_MODEL, _, _CLIP_PREPROCESS = open_clip.create_model_and_transforms(
+            "ViT-g-14", pretrained="laion2b_s12b_b42k", device="cuda:0"
+        )
+        _CLIP_TOKENIZER = open_clip.get_tokenizer("ViT-g-14")
+    return _CLIP_MODEL, _CLIP_PREPROCESS, _CLIP_TOKENIZER, "cuda:0" if torch.cuda.is_available() else "cpu"
 
 
 def _get_feature(media_path: str) -> torch.Tensor:
-    model, preprocess, device = clip_model()
+    model, preprocess, tokenizer, device = clip_model()
     image = preprocess(Image.open(media_path)).unsqueeze(0).to(device)
     with torch.no_grad():
         image_features = model.encode_image(image)
@@ -37,19 +45,18 @@ def _get_image_feature_db(
         features.append(_get_feature(media_path))
     return torch.stack(features).to("cpu" if not torch.cuda.is_available() else "cuda:0")
 
-def _get_text_feature(
-    samples: List[str], char_limit: int = 300
-):
-    model, _, device = clip_model()
+
+def _get_text_feature(samples: List[str], char_limit: int = 300) -> torch.Tensor:
+    model, _, tokenizer, device = clip_model()
     while True:
         try:
-            text = clip.tokenize([i[:char_limit] for i in samples]).to(device)  # type: ignore
+            text = tokenizer([i[:char_limit] for i in samples]).to(device)
             break
         except RuntimeError:
             # Back off the character limit
-            if char_limit < 20:
+            if char_limit < _CLIP_BACKOFF_CHARACTER_STEPS:
                 raise RuntimeError("Could not tokenize text -- too long?")
-            char_limit -= 20
+            char_limit -= _CLIP_BACKOFF_CHARACTER_STEPS
 
     with torch.no_grad():
         text_features = model.encode_text(text)
@@ -63,43 +70,18 @@ def _get_text_features(
 
     return _get_text_feature(candidates), _get_text_feature(references), _get_text_feature(baselines)
 
-    # TODO: Remove this if the code still works :)
-    # model, _, device = clip_model()
-
-    # while True:
-    #     try:
-    #         candidate_text = clip.tokenize([i[:char_limit] for i in candidates]).to(device)  # type: ignore
-    #         reference_text = clip.tokenize([i[:char_limit] for i in references]).to(device)  # type: ignore
-    #         baseline_text = clip.tokenize([i[:char_limit] for i in baselines]).to(device)  # type: ignore
-    #         break
-    #     except RuntimeError:
-    #         # Back off the character limit
-    #         if char_limit < 20:
-    #             raise RuntimeError("Could not tokenize text -- too long?")
-    #         char_limit -= 20
-
-    # with torch.no_grad():
-    #     candidate_text_features = model.encode_text(candidate_text)
-    #     reference_text_features = model.encode_text(reference_text)
-    #     baseline_text_features = model.encode_text(baseline_text)
-    #     candidate_text_features /= candidate_text_features.norm(dim=-1, keepdim=True)
-    #     reference_text_features /= reference_text_features.norm(dim=-1, keepdim=True)
-    #     baseline_text_features /= baseline_text_features.norm(dim=-1, keepdim=True)
-
-    # return candidate_text_features, reference_text_features, baseline_text_features
-
 
 def _compute_rank(index: int, feature_db: torch.Tensor, candidate: str, char_limit: int = 300) -> np.ndarray:
-    model, _, device = clip_model()
+    model, _, tokenizer, device = clip_model()
     while True:
         try:
-            candidate_text = clip.tokenize([candidate[:char_limit]]).to(device)  # type: ignore
+            candidate_text = tokenizer([candidate[:char_limit]]).to(device)  # type: ignore
             break
         except RuntimeError:
             # Back off the character limit
-            if char_limit < 20:
+            if char_limit < _CLIP_BACKOFF_CHARACTER_STEPS:
                 raise RuntimeError("Could not tokenize text -- too long?")
-            char_limit -= 20
+            char_limit -= _CLIP_BACKOFF_CHARACTER_STEPS
 
     with torch.no_grad():
         candidate_text_features = model.encode_text(candidate_text)
@@ -139,8 +121,12 @@ def compute_and_add_clip_recall(
             sample["scores"]["candidate_summary_clip_recall_rank"] = float(np.mean(candidate_ranks))
             sample["scores"]["candidate_summary_clip_recall_mrr"] = float(np.mean(1 / candidate_ranks))
             sample["scores"]["candidate_summary_clip_recall_at_1"] = float(np.mean(candidate_ranks <= 1))
-            sample["scores"]["candidate_summary_clip_recall_at_5"] = float(np.mean(candidate_ranks <= 5))
-            sample["scores"]["candidate_summary_clip_recall_at_10"] = float(np.mean(candidate_ranks <= 10))
+            sample["scores"]["candidate_summary_clip_recall_at_5"] = float(
+                np.mean(candidate_ranks <= 5)  # noqa: PLR2004
+            )
+            sample["scores"]["candidate_summary_clip_recall_at_10"] = float(
+                np.mean(candidate_ranks <= 10)  # noqa: PLR2004
+            )
             sample["scores"]["candidate_summary_clip_recall_max_rank"] = float(np.amax(candidate_ranks))
 
         if "reference_summary" in sample:
@@ -148,8 +134,12 @@ def compute_and_add_clip_recall(
             sample["scores"]["reference_summary_clip_recall_rank"] = float(np.mean(reference_ranks))
             sample["scores"]["reference_summary_clip_recall_mrr"] = float(np.mean(1 / reference_ranks))
             sample["scores"]["reference_summary_clip_recall_at_1"] = float(np.mean(reference_ranks <= 1))
-            sample["scores"]["reference_summary_clip_recall_at_5"] = float(np.mean(reference_ranks <= 5))
-            sample["scores"]["reference_summary_clip_recall_at_10"] = float(np.mean(reference_ranks <= 10))
+            sample["scores"]["reference_summary_clip_recall_at_5"] = float(
+                np.mean(reference_ranks <= 5)  # noqa: PLR2004
+            )
+            sample["scores"]["reference_summary_clip_recall_at_10"] = float(
+                np.mean(reference_ranks <= 10)  # noqa: PLR2004
+            )
             sample["scores"]["reference_summary_clip_recall_max_rank"] = float(np.amax(reference_ranks))
 
         if "baseline" in sample:
@@ -157,8 +147,8 @@ def compute_and_add_clip_recall(
             sample["scores"]["baseline_clip_recall_rank"] = float(np.mean(baseline_ranks))
             sample["scores"]["baseline_clip_recall_mrr"] = float(np.mean(1 / baseline_ranks))
             sample["scores"]["baseline_clip_recall_at_1"] = float(np.mean(baseline_ranks <= 1))
-            sample["scores"]["baseline_clip_recall_at_5"] = float(np.mean(baseline_ranks <= 5))
-            sample["scores"]["baseline_clip_recall_at_10"] = float(np.mean(baseline_ranks <= 10))
+            sample["scores"]["baseline_clip_recall_at_5"] = float(np.mean(baseline_ranks <= 5))  # noqa: PLR2004
+            sample["scores"]["baseline_clip_recall_at_10"] = float(np.mean(baseline_ranks <= 10))  # noqa: PLR2004
             sample["scores"]["baseline_clip_recall_max_rank"] = float(np.amax(baseline_ranks))
 
     return samples

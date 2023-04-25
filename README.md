@@ -7,11 +7,6 @@ This is the implementation of the paper [IC3: Image Captioning by Committee Cons
 
 The library can be installed with:
 ```bash
-# We can't install CLIP with setuptools, so we have to install it on its own
-$ pip install git+https://github.com/openai/CLIP.git
-# We also can't install LAVIS with setuptools, so we have to install it on its own
-# We specify no-deps here, since LAVIS doesn't like new versions of pytorch (even though it supports it)
-$ pip install git+https://github.com/salesforce/LAVIS.git --no-deps
 # Install the local directory with setuptools
 $ pip install .
 # For the metrics, we need to download and install a spacy model
@@ -36,11 +31,6 @@ the OFA and GPT-2 models.
 To run the model using the CLI, you can use:
 ```bash
 $ cbc caption <image path>
-```
-
-To run the model on a video using the CLI, you can use:
-```bash
-$ cbc video <video path>
 ```
 
 If you have a full dataset of examples, you can use:
@@ -93,6 +83,73 @@ def run_caption() -> None:
     print(caption)
 
 ```
+
+## Available Captioning/LM Engines
+
+The following captioning and language models are available for use with this library:
+
+### Captioning
+
+BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation
+- "blip"
+- "blip-base"
+
+BLIP-2: Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models
+- "blip2"
+- "blip2-base"
+- "blip2-t5"
+
+OFA: Unifying Architectures, Tasks, and Modalities Through a Simple Sequence-to-Sequence Learning Framework
+- "ofa"
+
+Socratic Models: Composing Zero-Shot Multimodal Reasoning with Language
+- "socratic-models"
+
+### Language Modeling
+
+OpenAI (Requires setting the `OPENAI_API_KEY` and `OPENAI_API_ORG` environment variables):
+- "gpt4" (GPT-4 Chat model)
+- "gpt432k" (GPT-4 32k Context Chat model)
+- "chatgpt" (GPT-3.5-Turbo Chat model)
+- "gpt3_davinci3" (GPT-3 Davinci v3 Completion model)
+- "gpt3_davinci2" (GPT-3 Davinci v2 Completion model)
+- "gpt3_curie" (GPT-3 Curie Completion model)
+- "gpt3_babbage" (GPT-3 Babbage Completion model)
+- "gpt3_ada" (GPT-3 Ada Completion model)
+
+Huggingface (Requires setting the `HUGGINGFACE_API_KEY` environment variable):
+- "bloom" (Bloom 175B model)
+- "opt" (OPT 66B model)
+
+Huggingface (No API key required):
+- "gpt2" (GPT-2 model)
+- "gpt2_med" (GPT-2 Medium model)
+- "gpt2_lg" (GPT-2 Large model)
+- "gpt2_xl" (GPT-2 XL model)
+- "distilgpt2" (DistilGPT-2 model)
+- "gpt_neo_125m" (GPT-Neo 125M model)
+- "gpt_neo_1b" (GPT-Neo 1.3B model)
+- "gpt_neo_2b" (GPT-Neo 2.7B model)
+- "gpt_j_6b" (GPT-J 6B model)
+
+Summary Models:
+- "t5_small" (T5 Small model)
+- "pegasus" (Pegasus model)
+
+LLaMA: Open and Efficient Foundation Language Models (Requires setting the `HUGGINGFACE_LLAMA_WEIGHTS_ROOT` environment variable and preprocessing the weights according to [this url](https://huggingface.co/docs/transformers/main/model_doc/llama).):
+- "llama_7B" (LLaMA 7B model)
+- "llama_13B" (LLaMA 13B model)
+- "llama_30B" (LLaMA 30B model)
+- "llama_65B" (LLaMA 65B model)
+
+StableLM: Stability AI Language Models
+- "stable_lm_3B" (StableLM Chat Tuned 3B model)
+- "stable_lm_7B" (StableLM Chat Tuned 7B model)
+- "stable_lm_base_3B" (StableLM Completion 3B model)
+- "stable_lm_base_7B" (StableLM Completion 7B model)
+
+Bard (Requires setting the `GOOGLE_BARD_SESSION_ID` environment variable. Get the value of this variable by first going to [https://bard.google.com/](https://bard.google.com/), then log in, press F12 for console, and go to the "Application" tab, then "Cookies", then copy the value of the "__Secure-1PSID" cookie.):
+- "bard" (Bard model)
 
 
 ## Running the demos

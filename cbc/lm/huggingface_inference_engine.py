@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from typing import Any, List, Optional
@@ -5,6 +6,7 @@ from typing import Any, List, Optional
 import requests
 
 from cbc.lm.base import LMEngine
+from cbc.utils.python import singleton
 
 
 class InferenceError(RuntimeError):
@@ -41,7 +43,7 @@ class HuggingfaceInferenceLMEngine(LMEngine):
 
                 if "error" in response:
                     if "loading" in response["error"]:
-                        print("Model is still loading, retrying in 60s...")
+                        logging.info("Model is still loading, retrying in 60s...")
                         time.sleep(60)
                         continue
                     raise InferenceError(response["error"])
@@ -61,11 +63,13 @@ class HuggingfaceInferenceLMEngine(LMEngine):
         return self(prompt, n_completions=1)[0]
 
 
+@singleton
 class Bloom(HuggingfaceInferenceLMEngine):
     def __init__(self) -> None:
         super().__init__("bigscience/bloom")
 
 
+@singleton
 class OPT(HuggingfaceInferenceLMEngine):
     def __init__(self) -> None:
         super().__init__("facebook/opt-66b")

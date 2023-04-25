@@ -23,8 +23,8 @@ def compute_clip_recall(dataset, image_path_key, image_root, reference_key) -> N
             reference_ranks = _compute_rank(index, feature_db, ref)
             sample_mrr.append(np.mean(1 / reference_ranks))
             sample_recall_at_1.append(np.mean(reference_ranks <= 1))
-            sample_recall_at_5.append(np.mean(reference_ranks <= 5))
-            sample_recall_at_10.append(np.mean(reference_ranks <= 10))
+            sample_recall_at_5.append(np.mean(reference_ranks <= 5))  # noqa: PLR2004
+            sample_recall_at_10.append(np.mean(reference_ranks <= 10))  # noqa: PLR2004
         sample["mrr"] = np.mean(sample_mrr)
         sample["recall_at_1"] = np.mean(sample_recall_at_1)
         sample["recall_at_5"] = np.mean(sample_recall_at_5)
@@ -74,7 +74,7 @@ def main(
     reference_key: str = "references",
 ) -> None:
 
-    with open(dataset_json_path, "r") as f:
+    with open(dataset_json_path) as f:
         dataset = json.load(f)
         if isinstance(dataset, dict):
             dataset = dataset["samples"]

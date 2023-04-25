@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The OFA-Sys Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +15,19 @@
 
 import math
 import random
-from typing import Optional, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 import torch
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-
 from transformers.activations import ACT2FN
 from transformers.file_utils import (
+    ModelOutput,
     add_code_sample_docstrings,
-    add_end_docstrings,
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
-    replace_return_docstrings,
 )
-from transformers.file_utils import ModelOutput
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     Seq2SeqLMOutput,
@@ -40,10 +35,9 @@ from transformers.modeling_outputs import (
 )
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import logging
+
 from .configuration_ofa import OFAConfig
 from .resnet import ResNet
-from torch import Tensor
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.get_logger(__name__)
 
@@ -262,7 +256,7 @@ class DropPath(nn.Module):
         return drop_path(x, self.drop_prob, self.training)
 
     def extra_repr(self) -> str:
-        return "p={}".format(self.drop_prob)
+        return f"p={self.drop_prob}"
 
 
 class OFAAttention(nn.Module):
@@ -1274,7 +1268,7 @@ class OFAEncoder(OFAPreTrainedModel):
 
             if output_attentions:
                 attention = hidden_outputs[1]
-                all_attentions = all_attentions + (attention,)
+                all_attentions = (*all_attentions, attention)
 
         if output_hidden_states:
             encoder_states += (x,)

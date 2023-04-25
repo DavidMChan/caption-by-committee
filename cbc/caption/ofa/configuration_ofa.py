@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The OFA-Sys Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +13,9 @@
 # limitations under the License.
 """ OFA model configuration"""
 import warnings
+
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
-
 
 logger = logging.get_logger(__name__)
 

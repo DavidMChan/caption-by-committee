@@ -4,15 +4,14 @@
 # # LICENSE file in the root directory of this source tree.
 #
 
+import collections
 from itertools import accumulate
 
 import torch
 import torch.nn.functional as F
-import collections
-
 
 try:
-    from amp_C import multi_tensor_l2norm
+    from amp_C import multi_tensor_l2norm  # noqa: F401
 
     multi_tensor_l2norm_available = True
 except ImportError:
@@ -24,9 +23,8 @@ except ImportError:
     xm = None
 
 
-
-
 MANIFOLD_PATH_SEP = "|"
+
 
 def apply_to_sample(f, sample):
     if hasattr(sample, "__len__") and len(sample) == 0:
@@ -53,6 +51,7 @@ def apply_to_sample(f, sample):
 
     return _apply(sample)
 
+
 def move_to_cuda(sample, device=None):
     device = device or torch.cuda.current_device()
 
@@ -63,8 +62,10 @@ def move_to_cuda(sample, device=None):
 
     return apply_to_sample(_move_to_cuda, sample)
 
+
 def strip_pad(tensor, pad):
     return tensor[tensor.ne(pad)]
+
 
 def get_token_to_word_mapping(tokens, exclude_list):
     n = len(tokens)
@@ -75,12 +76,8 @@ def get_token_to_word_mapping(tokens, exclude_list):
 
 
 def extract_hard_alignment(attn, src_sent, tgt_sent, pad, eos):
-    tgt_valid = (
-        ((tgt_sent != pad) & (tgt_sent != eos)).nonzero(as_tuple=False).squeeze(dim=-1)
-    )
-    src_invalid = (
-        ((src_sent == pad) | (src_sent == eos)).nonzero(as_tuple=False).squeeze(dim=-1)
-    )
+    tgt_valid = ((tgt_sent != pad) & (tgt_sent != eos)).nonzero(as_tuple=False).squeeze(dim=-1)
+    src_invalid = ((src_sent == pad) | (src_sent == eos)).nonzero(as_tuple=False).squeeze(dim=-1)
     src_token_to_word = get_token_to_word_mapping(src_sent, [eos, pad])
     tgt_token_to_word = get_token_to_word_mapping(tgt_sent, [eos, pad])
     alignment = []
@@ -97,6 +94,7 @@ def extract_hard_alignment(attn, src_sent, tgt_sent, pad, eos):
             )
     return alignment
 
+
 def softmax(x, dim: int, onnx_trace: bool = False):
     if onnx_trace:
         return F.softmax(x.float(), dim=dim)
@@ -110,13 +108,12 @@ def log_softmax(x, dim: int, onnx_trace: bool = False):
     else:
         return F.log_softmax(x, dim=dim, dtype=torch.float32)
 
+
 def extract_soft_alignment(attn, src_sent, tgt_sent, pad, eos):
-    tgt_valid = ((tgt_sent != pad)).nonzero(as_tuple=False)
-    src_valid = ((src_sent != pad)).nonzero(as_tuple=False).squeeze(dim=-1)
+    tgt_valid = (tgt_sent != pad).nonzero(as_tuple=False)
+    src_valid = (src_sent != pad).nonzero(as_tuple=False).squeeze(dim=-1)
     alignment = []
     if len(tgt_valid) != 0 and len(src_valid) != 0:
         attn_valid = attn[tgt_valid, src_valid]
-        alignment = [
-            ["{:.6f}".format(p) for p in src_probs.tolist()] for src_probs in attn_valid
-        ]
+        alignment = [[f"{p:.6f}" for p in src_probs.tolist()] for src_probs in attn_valid]
     return alignment

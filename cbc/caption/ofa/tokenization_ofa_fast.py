@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2022 The OFA-Sys Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tokenization classes for OFA."""
-from transformers.utils import logging
-from transformers.models.bart.tokenization_bart_fast import BartTokenizerFast
-from tokenization_ofa import OFATokenizer
-
-from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 import os
+from typing import Union
+
+from tokenization_ofa import OFATokenizer
+from transformers.models.bart.tokenization_bart_fast import BartTokenizerFast
+from transformers.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -65,6 +64,6 @@ class OFATokenizerFast(BartTokenizerFast):
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], *init_inputs, **kwargs):
         tokenizer = super().from_pretrained(pretrained_model_name_or_path, *init_inputs, **kwargs)
-        tokenizer.add_tokens(["<code_{}>".format(i) for i in range(8192)])
-        tokenizer.add_tokens(["<bin_{}>".format(i) for i in range(1000)])
+        tokenizer.add_tokens([f"<code_{i}>" for i in range(8192)])
+        tokenizer.add_tokens([f"<bin_{i}>" for i in range(1000)])
         return tokenizer

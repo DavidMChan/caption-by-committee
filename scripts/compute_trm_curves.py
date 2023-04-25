@@ -71,7 +71,7 @@ def main(
 ):
 
     # Load the dataset
-    with open(dataset_json_path, "r") as f:
+    with open(dataset_json_path) as f:
         dataset = json.load(f)
 
     # Load the captioner and scorer

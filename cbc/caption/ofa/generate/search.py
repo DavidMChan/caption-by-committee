@@ -7,13 +7,13 @@ import math
 from typing import List, Optional
 
 import torch
-import torch.nn as nn
+from torch import Tensor, nn
+
 from .token_generation_constraints import (
     ConstraintState,
     OrderedConstraintState,
     UnorderedConstraintState,
 )
-from torch import Tensor
 
 
 class Search(nn.Module):
@@ -30,9 +30,7 @@ class Search(nn.Module):
         self.supports_constraints = False
         self.stop_on_max_len = False
 
-    def step(
-        self, step, lprobs, scores, prev_output_tokens=None, original_batch_idxs=None
-    ):
+    def step(self, step, lprobs, scores, prev_output_tokens=None, original_batch_idxs=None):
         """Take a single search step.
 
         Args:
@@ -156,14 +154,10 @@ class PrefixConstrainedBeamSearch(Search):
     @torch.jit.export
     def apply_mask(self, x, prev_output_tokens, original_batch_idxs):
         beam_size = x.shape[0] // original_batch_idxs.shape[0]
-        original_batch_idxs = (
-            original_batch_idxs.unsqueeze(-1).repeat((1, beam_size)).flatten().tolist()
-        )
+        original_batch_idxs = original_batch_idxs.unsqueeze(-1).repeat((1, beam_size)).flatten().tolist()
 
         mask = torch.full_like(x, -math.inf)
-        for sent_i, (sent, batch_i) in enumerate(
-            zip(prev_output_tokens, original_batch_idxs)
-        ):
+        for sent_i, (sent, batch_i) in enumerate(zip(prev_output_tokens, original_batch_idxs)):
             mask[sent_i, :, self.prefix_allowed_tokens_fn(batch_i, sent)] = 0
 
         return mask
@@ -252,18 +246,14 @@ class LexicallyConstrainedBeamSearch(Search):
 
     @torch.jit.export
     def prune_sentences(self, batch_idxs: Tensor):
-        self.constraint_states = [
-            self.constraint_states[i] for i in batch_idxs.tolist()
-        ]
+        self.constraint_states = [self.constraint_states[i] for i in batch_idxs.tolist()]
 
     @torch.jit.export
     def update_constraints(self, active_hypos: Tensor):
         if self.constraint_states:
             batch_size = active_hypos.size(0)
             for sentid in range(batch_size):
-                self.constraint_states[sentid] = [
-                    self.constraint_states[sentid][i] for i in active_hypos[sentid]
-                ]
+                self.constraint_states[sentid] = [self.constraint_states[sentid][i] for i in active_hypos[sentid]]
 
     @torch.jit.export
     def step(
@@ -322,9 +312,7 @@ class LexicallyConstrainedBeamSearch(Search):
                         not_finished_indices.append(index)
             not_finished_indices = torch.tensor(not_finished_indices)
             if not_finished_indices.numel() > 0:
-                lprobs.view(batch_size * beam_size, -1)[
-                    not_finished_indices, self.eos
-                ] = -math.inf
+                lprobs.view(batch_size * beam_size, -1)[not_finished_indices, self.eos] = -math.inf
 
         if step == 0:
             # at the first step all hypotheses are equally likely, so use
@@ -406,11 +394,7 @@ class LexicallyConstrainedBeamSearch(Search):
             next_tokens = torch.tensor(list(state.next_tokens()), device=device).long()
             if next_tokens.numel() != 0:
                 indices_buf = torch.cat((indices_buf, next_tokens))
-                next_beams = (
-                    torch.tensor(beamno, device=device)
-                    .repeat(next_tokens.size(0))
-                    .long()
-                )
+                next_beams = torch.tensor(beamno, device=device).repeat(next_tokens.size(0)).long()
                 beams_buf = torch.cat((beams_buf, next_beams))
                 next_values = lprobs[beamno].take(next_tokens.view(-1))
                 scores_buf = torch.cat((scores_buf, next_values))
@@ -430,10 +414,7 @@ class LexicallyConstrainedBeamSearch(Search):
 
         # Compute the new states for all candidates
         cands_size = indices_buf.size(0)
-        constraint_states = [
-            constraint_states[beams_buf[i]].advance(indices_buf[i])
-            for i in range(cands_size)
-        ]
+        constraint_states = [constraint_states[beams_buf[i]].advance(indices_buf[i]) for i in range(cands_size)]
 
         banks = torch.tensor([state.bank for state in constraint_states], device=device)
 
@@ -581,9 +562,7 @@ class DiverseBeamSearch(Search):
     ):
         bsz, beam_size, vocab_size = lprobs.size()
         if beam_size % self.num_groups != 0:
-            raise ValueError(
-                "DiverseBeamSearch requires --beam to be divisible by the number of groups"
-            )
+            raise ValueError("DiverseBeamSearch requires --beam to be divisible by the number of groups")
 
         # initialize diversity penalty
         diversity_buf = torch.zeros(lprobs[:, 0, :].size()).to(lprobs)
@@ -603,9 +582,7 @@ class DiverseBeamSearch(Search):
             else:
                 lprobs_g = lprobs_g.contiguous()
 
-            scores_buf, indices_buf, beams_buf = self.beam.step(
-                step, lprobs_g, scores_g
-            )
+            scores_buf, indices_buf, beams_buf = self.beam.step(step, lprobs_g, scores_g)
             beams_buf.mul_(self.num_groups).add_(g)
 
             scores_G.append(scores_buf.clone())
@@ -613,9 +590,7 @@ class DiverseBeamSearch(Search):
             beams_G.append(beams_buf.clone())
 
             # update diversity penalty
-            diversity_buf.scatter_add_(
-                1, indices_buf, torch.ones(indices_buf.size()).to(diversity_buf)
-            )
+            diversity_buf.scatter_add_(1, indices_buf, torch.ones(indices_buf.size()).to(diversity_buf))
 
         # interleave results from different groups
         scores_buf = torch.stack(scores_G, dim=2).view(bsz, -1)
@@ -741,9 +716,7 @@ class Sampling(Search):
         else:
             beams_buf = torch.arange(0, beam_size).to(indices_buf).repeat(bsz, 1)
             # make scores cumulative
-            scores_buf.add_(
-                torch.gather(scores[:, :, step - 1], dim=1, index=beams_buf)
-            )
+            scores_buf.add_(torch.gather(scores[:, :, step - 1], dim=1, index=beams_buf))
 
         return scores_buf, indices_buf, beams_buf
 

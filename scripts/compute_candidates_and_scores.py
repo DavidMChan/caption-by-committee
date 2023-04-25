@@ -45,7 +45,7 @@ def main(
     overwrite_candidates: bool = False,
 ) -> None:
     # 1. Load the Karpathy split of the MSCOCO dataset
-    with open(dataset_json_path, "r") as f:
+    with open(dataset_json_path) as f:
         samples = json.load(f)
 
     # 2. Generate the captions using the specified candidate caption engine

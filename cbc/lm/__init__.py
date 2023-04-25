@@ -1,10 +1,19 @@
 from typing import Dict, Set, Type
 
-from .base import LMEngine  # noqa: F401
-from .huggingface_inference_engine import HuggingfaceInferenceLMEngine  # noqa: F401
-from .huggingface_inference_engine import OPT, Bloom  # noqa: F401
-from .huggingface_local_engine import HuggingFaceLocalLMEngine  # noqa: F401
-from .huggingface_local_engine import HuggingFaceLocalSummaryEngine  # noqa: F401
+from .bard_engine import BardEngine
+from .base import LMEngine
+from .huggingface_inference_engine import (  # noqa: F401
+    OPT,
+    Bloom,
+    HuggingfaceInferenceLMEngine,
+)
+from .huggingface_llama_engine import (  # noqa: F401
+    HuggingFaceLlamaLMEngine,
+    Llama7B,
+    Llama13B,
+    Llama30B,
+    Llama65B,
+)
 from .huggingface_local_engine import (
     GPT2,
     GPT2XL,
@@ -15,14 +24,32 @@ from .huggingface_local_engine import (
     GPTNeo1B,
     GPTNeo2B,
     GPTNeo125M,
+    HuggingFaceLocalLMEngine,  # noqa: F401
+    HuggingFaceLocalSummaryEngine,  # noqa: F401
     Pegasus,
+    StableLM3B,
+    StableLM7B,
+    StableLMBase3B,
+    StableLMBase7B,
     T5Base,
     T5Small,
 )
-from .openai_engine import GPT3Ada, GPT3Babbage, GPT3Curie, GPT3Davinci2, GPT3Davinci3, ChatGPT, OpenAILMEngine  # noqa: F401
+from .openai_engine import (  # noqa: F401
+    GPT4,
+    GPT432K,
+    ChatGPT,
+    GPT3Ada,
+    GPT3Babbage,
+    GPT3Curie,
+    GPT3Davinci2,
+    GPT3Davinci3,
+    OpenAI,
+)
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "ChatGPT": ChatGPT,
+    "GPT-4": GPT4,
+    "GPT-4 (32K)": GPT432K,
     "GPT-3 (Davinci v3)": GPT3Davinci3,
     "GPT-3 (Davinci v2)": GPT3Davinci2,
     "GPT-3 (Curie)": GPT3Curie,
@@ -42,10 +69,21 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "T5 (Small)": T5Small,
     "Pegasus": Pegasus,
     "OPT (66B)": OPT,
+    "LLama 7B": Llama7B,
+    "LLama 13B": Llama13B,
+    "LLama 30B": Llama30B,
+    "LLama 65B": Llama65B,
+    "Stable LM (3B)": StableLM3B,
+    "Stable LM (7B)": StableLM7B,
+    "Stable LM Base (3B)": StableLMBase3B,
+    "Stable LM Base (7B)": StableLMBase7B,
+    "Bard": BardEngine,
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "chatgpt": ChatGPT,
+    "gpt4": GPT4,
+    "gpt432k": GPT432K,
     "gpt3_davinci3": GPT3Davinci3,
     "gpt3_davinci2": GPT3Davinci2,
     "gpt3_curie": GPT3Curie,
@@ -65,6 +103,15 @@ LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "t5_small": T5Small,
     "pegasus": Pegasus,
     "opt": OPT,
+    "llama_7B": Llama7B,
+    "llama_13B": Llama13B,
+    "llama_30B": Llama30B,
+    "llama_65B": Llama65B,
+    "stable_lm_3B": StableLM3B,
+    "stable_lm_7B": StableLM7B,
+    "stable_lm_base_3B": StableLMBase3B,
+    "stable_lm_base_7B": StableLMBase7B,
+    "bard": BardEngine,
 }
 
 LM_LOCAL_ENGINES: Set[str] = {
@@ -92,4 +139,12 @@ LM_LOCAL_ENGINES: Set[str] = {
     "T5 (Base)",
     "T5 (Small)",
     "Pegasus",
+    "llama_7B",
+    "llama_13B",
+    "llama_30B",
+    "llama_65B",
+    "stable_lm_3B",
+    "stable_lm_7B",
+    "stable_lm_base_3B",
+    "stable_lm_base_7B",
 }

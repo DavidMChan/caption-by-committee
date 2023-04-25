@@ -28,7 +28,7 @@ that many times in the output.
 """
 
 from collections import Counter
-from typing import List, Optional, Set, Tuple
+from typing import List, Set
 
 import torch
 
@@ -71,11 +71,7 @@ def pack_constraints(batch_constraints: List[List[torch.Tensor]]) -> torch.Tenso
     for sentence_constraints in batch_constraints:
         if len(sentence_constraints):
             # number of constraints, plus sum of constrain lens, plus a zero after each
-            constraints_len = (
-                1
-                + sum([c.size(0) for c in sentence_constraints])
-                + len(sentence_constraints)
-            )
+            constraints_len = 1 + sum([c.size(0) for c in sentence_constraints]) + len(sentence_constraints)
             max_constraints_len = max(max_constraints_len, constraints_len)
 
     batch_size = len(batch_constraints)
@@ -411,9 +407,7 @@ class OrderedConstraintState(ConstraintState):
     def num_completed(self):
         if self.state == -1:
             return 0
-        count = len(
-            list(filter(lambda x: x, self.sequence.endpoints[0 : self.state + 1]))
-        )
+        count = len(list(filter(lambda x: x, self.sequence.endpoints[0 : self.state + 1])))
         return count
 
     @property
