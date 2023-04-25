@@ -173,6 +173,18 @@ Vicuna: An Open Chatbot Impressing GPT-4 (Requires setting the `HUGGINGFACE_VICU
 -   "vicuna_7B" (Vicuna 7B)
 -   "vicuna_13B" (Vicuna 13B)
 
+Alpaca: A Strong, Replicable Instruction-Following Model (Requires setting the `HUGGINGFACE_ALPACA_WEIGHTS_ROOT` environment variable and preprocessing the weights according to [this url](https://github.com/tatsu-lab/stanford_alpaca#recovering-alpaca-weights).):
+- "alpaca_7B" (Alpaca 7B)
+
+Koala: A Dialogue Model for Academic Research (Requires setting the `HUGGINGFACE_KOALA_WEIGHTS_ROOT` environment variable and preprocessing the weights according to [this url](https://github.com/young-geng/EasyLM/blob/main/docs/koala.md).):
+- "koala_7B" (Koala 7B)
+- "koala_13B_v1" (Koala 13B V1)
+- "koala_13B_v2" (Koala 13B V2)
+
+Vicuna: An Open Chatbot Impressing GPT-4 (Requires setting the `HUGGINGFACE_VICUNA_WEIGHTS_ROOT` environment variable and preprocessing the weights according to [this url](https://github.com/lm-sys/FastChat#vicuna-weights).):
+- "vicuna_7B" (Vicuna 7B)
+- "vicuna_13B" (Vicuna 13B)
+
 StableLM: Stability AI Language Models
 
 -   "stable_lm_3B" (StableLM Chat Tuned 3B model)

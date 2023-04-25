@@ -13,7 +13,6 @@ from cbc.utils.python import singleton
 
 class HuggingFaceLlamaLMEngine(LMEngine):
     def __init__(self, model: str, weight_root: str, device: Optional[str] = None):
-
         if LlamaForCausalLM is None or LlamaTokenizer is None:
             raise ImportError("Please install the transformers >= 4.28.0 to use this LM engine.")
 
@@ -121,24 +120,24 @@ class Koala7B(HuggingFaceLlamaLMEngine):
 
 
 @singleton
-class Koala13B_V1(HuggingFaceLlamaLMEngine):  # noqa: N801
+class Koala13B_V1(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("koala_13B_v1", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Koala13B_V2(HuggingFaceLlamaLMEngine):  # noqa: N801
+class Koala13B_V2(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("koala_13B_v2", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Vicuna_7B(HuggingFaceLlamaLMEngine):  # noqa: N801
+class Vicuna_7B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("vicuna_7B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Vicuna_13B(HuggingFaceLlamaLMEngine):  # noqa: N801
+class Vicuna_13B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("vicuna_13B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)
