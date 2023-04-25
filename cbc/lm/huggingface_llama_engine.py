@@ -12,17 +12,17 @@ from cbc.utils.python import singleton
 
 
 class HuggingFaceLlamaLMEngine(LMEngine):
-    def __init__(self, model: str, device: Optional[str] = None):
+    def __init__(self, model: str, weight_root: str, device: Optional[str] = None):
 
         if LlamaForCausalLM is None or LlamaTokenizer is None:
             raise ImportError("Please install the transformers >= 4.28.0 to use this LM engine.")
 
         self._device = device
         self.tokenizer = LlamaTokenizer.from_pretrained(
-            f"{os.environ.get('HUGGINGFACE_LLAMA_WEIGHTS_ROOT', '')}{model}"
+            f"{os.environ.get(weight_root, '')}{model}"
         )
         self._generator = LlamaForCausalLM.from_pretrained(
-            f"{os.environ.get('HUGGINGFACE_LLAMA_WEIGHTS_ROOT', '')}{model}", device_map="auto"
+            f"{os.environ.get(weight_root, '')}{model}", device_map="auto"
         )
 
     def __call__(
@@ -89,22 +89,58 @@ class HuggingFaceLlamaLMEngine(LMEngine):
 @singleton
 class Llama7B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
-        super().__init__("7B", device=device)
+        super().__init__("7B", "HUGGINGFACE_LLAMA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
 class Llama13B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
-        super().__init__("13B", device=device)
+        super().__init__("13B", "HUGGINGFACE_LLAMA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
 class Llama30B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
-        super().__init__("30B", device=device)
+        super().__init__("30B", "HUGGINGFACE_LLAMA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
 class Llama65B(HuggingFaceLlamaLMEngine):
     def __init__(self, device: Optional[str] = None) -> None:
-        super().__init__("65B", device=device)
+        super().__init__("65B", "HUGGINGFACE_LLAMA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Alpaca7B(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("alpaca_7B", "HUGGINGFACE_ALPACA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Koala7B(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("koala_7B", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Koala13B_V1(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("koala_13B_v1", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Koala13B_V2(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("koala_13B_v2", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Vicuna_7B(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("vicuna_7B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)
+
+
+@singleton
+class Vicuna_13B(HuggingFaceLlamaLMEngine):
+    def __init__(self, device: Optional[str] = None) -> None:
+        super().__init__("vicuna_13B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)
