@@ -7,6 +7,8 @@ This is the implementation of the paper [IC3: Image Captioning by Committee Cons
 
 The library can be installed with:
 ```bash
+# Install LAVIS for BLIP/BLIP2 support
+$ pip install salesforce-lavis
 # Install the local directory with setuptools
 $ pip install .
 # For the metrics, we need to download and install a spacy model
