@@ -47,7 +47,7 @@ Where the JSON format (minimally) looks like:
 [
     {
         "references": ["List", "of", "references"],
-        "image_path": "Relative path to image/video"
+        "image_path": "Relative path to image"
     },
     ...
 ]
