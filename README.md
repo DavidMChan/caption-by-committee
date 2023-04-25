@@ -1,5 +1,7 @@
 # Captioning by committee
 
+![Method overview diagram](https://raw.githubusercontent.com/DavidMChan/caption-by-committee/main/assets/method-v2.png)
+
 This is the implementation of the paper [IC3: Image Captioning by Committee Consensus](https://arxiv.org/abs/2302.01328).
 
 
