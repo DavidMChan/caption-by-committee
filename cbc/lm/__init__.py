@@ -7,15 +7,15 @@ from .huggingface_inference_engine import (  # noqa: F401
     Bloom,
     HuggingfaceInferenceLMEngine,
 )
-from .huggingface_llama_engine import (  # noqa: F401
-    Llama7B,
-    Llama13B,
-    Llama30B,
-    Llama65B,
+from .huggingface_llama_engine import (
     Alpaca7B,
     Koala7B,
     Koala13B_V1,
     Koala13B_V2,
+    Llama7B,
+    Llama13B,
+    Llama30B,
+    Llama65B,
     Vicuna_7B,
     Vicuna_13B,
 )

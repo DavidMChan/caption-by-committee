@@ -18,9 +18,7 @@ class HuggingFaceLlamaLMEngine(LMEngine):
             raise ImportError("Please install the transformers >= 4.28.0 to use this LM engine.")
 
         self._device = device
-        self.tokenizer = LlamaTokenizer.from_pretrained(
-            f"{os.environ.get(weight_root, '')}{model}"
-        )
+        self.tokenizer = LlamaTokenizer.from_pretrained(f"{os.environ.get(weight_root, '')}{model}")
         self._generator = LlamaForCausalLM.from_pretrained(
             f"{os.environ.get(weight_root, '')}{model}", device_map="auto"
         )
@@ -123,24 +121,24 @@ class Koala7B(HuggingFaceLlamaLMEngine):
 
 
 @singleton
-class Koala13B_V1(HuggingFaceLlamaLMEngine):
+class Koala13B_V1(HuggingFaceLlamaLMEngine):  # noqa: N801
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("koala_13B_v1", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Koala13B_V2(HuggingFaceLlamaLMEngine):
+class Koala13B_V2(HuggingFaceLlamaLMEngine):  # noqa: N801
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("koala_13B_v2", "HUGGINGFACE_KOALA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Vicuna_7B(HuggingFaceLlamaLMEngine):
+class Vicuna_7B(HuggingFaceLlamaLMEngine):  # noqa: N801
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("vicuna_7B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)
 
 
 @singleton
-class Vicuna_13B(HuggingFaceLlamaLMEngine):
+class Vicuna_13B(HuggingFaceLlamaLMEngine):  # noqa: N801
     def __init__(self, device: Optional[str] = None) -> None:
         super().__init__("vicuna_13B", "HUGGINGFACE_VICUNA_WEIGHTS_ROOT", device=device)

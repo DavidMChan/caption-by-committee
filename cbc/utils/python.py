@@ -1,8 +1,8 @@
+import functools
 import hashlib
 import os
 from contextlib import AbstractContextManager
-from functools import wraps
-from typing import List
+from typing import Any, Generic, List, Optional, Type, TypeVar
 
 
 def compute_md5_hash_from_bytes(input_bytes: bytes) -> str:
@@ -25,19 +25,22 @@ class chdir(AbstractContextManager):  # noqa: N801
         os.chdir(self._old_cwd.pop())
 
 
-# https://igeorgiev.eu/python/design-patterns/python-singleton-pattern-decorator/
-def singleton(orig_cls):
-    orig_new = orig_cls.__new__
-    instance = None
+T = TypeVar("T")
+S = TypeVar("S")
 
-    @wraps(orig_cls.__new__)
-    def __new__(cls, *args, **kwargs):
-        nonlocal instance
-        if instance is None:
-            instance = orig_new(cls)
-            cls.__init__(instance, *args, **kwargs)
-        return instance
 
-    orig_cls.__new__ = __new__
+class _SingletonWrapper(Generic[T]):
+    def __init__(self, cls: Type[T]):
+        self.__wrapped__ = cls
+        self._instance: Optional[T] = None
+        functools.update_wrapper(self, cls)
 
-    return orig_cls
+    def __call__(self, *args: Any, **kwargs: Any) -> T:
+        """Returns a single instance of decorated class"""
+        if self._instance is None:
+            self._instance = self.__wrapped__(*args, **kwargs)
+        return self._instance
+
+
+def singleton(cls: Type[S]) -> _SingletonWrapper[S]:
+    return _SingletonWrapper(cls)
