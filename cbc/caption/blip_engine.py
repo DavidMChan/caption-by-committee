@@ -45,12 +45,15 @@ def _generate_with_temperature(
     temperature: float = 1.0,
 ) -> List[str]:
     # NOTE: This has to be overridden, since on it's own, lavis doesn't have a way to specify the temperature.
-
+    
     # prepare inputs for decoder generation.
     encoder_out = model.forward_encoder(samples)  # type: ignore
     image_embeds = torch.repeat_interleave(encoder_out, num_captions, 0)
-
-    prompt = [model.prompt] * image_embeds.size(0)
+    
+    prompt = samples.get("prompt", model.prompt)
+    if isinstance(prompt, str):
+        prompt = [prompt] * image_embeds.size(0)
+        
     prompt = model.tokenizer(prompt, return_tensors="pt").to(model.device)  # type: ignore
     prompt.input_ids[:, 0] = model.tokenizer.bos_token_id  # type: ignore
     prompt.input_ids = prompt.input_ids[:, :-1]  # type: ignore
@@ -256,6 +259,23 @@ class BLIPCaptionEngine(CaptionEngine):
 
         return postprocess_caption(beam_search_caption[0])
 
+    def get_ask_caption(self, raw_image: Image, question: str = "") -> str:
+        image = self._vis_processors["eval"](raw_image).unsqueeze(0).to(self._device)  # type: ignore
+        if question == "":
+            samples = {"image": image}
+        else:
+            samples = {"image": image, "prompt": question}
+        
+        beam_search_caption = _generate_with_temperature(
+            self._model,
+            samples,
+            num_captions=1,
+            top_p=0.9,
+            use_nucleus_sampling=False,
+            num_beams=16,
+        )
+        
+        return postprocess_caption(beam_search_caption[0])
 
 class BLIP2CaptionEngine(CaptionEngine):
     def __init__(
@@ -325,7 +345,36 @@ class BLIP2CaptionEngine(CaptionEngine):
         )
 
         return postprocess_caption(beam_search_caption[0])
+    
+    def get_ask_caption(self, raw_image: Image, question: str = "") -> str:
+        # Generate best beam search caption
+        image = self._vis_processors["eval"](raw_image).unsqueeze(0).to(self._device)  # type: ignore
+        _gen_fn = (
+            _generate_opt_with_temperature
+            if self._architecture == "blip2_opt"
+            else _generate_t5_with_temperature
+            if self._architecture == "blip2_t5"
+            else None
+        )
+        if _gen_fn is None:
+            raise ValueError(f"Architecture {self._architecture} not supported for BLIP2CaptionEngine.")
+        if question == "":
+            samples = {"image": image}
+        else:
+            samples = {"image": image, "prompt": question}
+                
+        beam_search_caption = _gen_fn(
+            self._model,
+            samples,
+            num_captions=1,
+            top_p=0.9,
+            use_nucleus_sampling=False,
+            num_beams=16,
+        )
 
+        return postprocess_caption(beam_search_caption[0])
+    
+    
 
 class BLIPLarge(BLIPCaptionEngine):
     def __init__(self, device: Optional[str] = None):
@@ -350,3 +399,9 @@ class BLIP2COCOBase(BLIP2CaptionEngine):
 class BLIP2COCOT5Large(BLIP2CaptionEngine):
     def __init__(self, device: Optional[str] = None):
         super().__init__(architecture="blip2_t5", model="caption_coco_flant5xl", device=device)
+
+
+class BLIP2COCOT5XLarge(BLIP2CaptionEngine):
+    def __init__(self, device: Optional[str] = None):
+        super().__init__(architecture="blip2_t5", model="pretrain_flant5xxl", device=device)
+
