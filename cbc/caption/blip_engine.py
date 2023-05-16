@@ -45,7 +45,7 @@ def _generate_with_temperature(
     temperature: float = 1.0,
 ) -> List[str]:
     # NOTE: This has to be overridden, since on it's own, lavis doesn't have a way to specify the temperature.
-    
+
     # prepare inputs for decoder generation.
     encoder_out = model.forward_encoder(samples)  # type: ignore
     image_embeds = torch.repeat_interleave(encoder_out, num_captions, 0)
