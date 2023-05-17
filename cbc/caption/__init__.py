@@ -5,6 +5,7 @@ from .blip_engine import BLIP2COCOBase, BLIP2COCOLarge, BLIP2COCOT5Large, BLIPBa
 from .ic3_engine import IC3CaptionEngine
 from .ofa_engine import OFACaptionEngine
 from .socratic_models import SocraticModelCaptionEngine
+from .chatcaptioner_engine import ChatCaptionerEngine
 
 CAPTION_ENGINES: Dict[str, Type[CaptionEngine]] = {
     "BLIP (Large)": BLIPLarge,
@@ -16,6 +17,7 @@ CAPTION_ENGINES: Dict[str, Type[CaptionEngine]] = {
     "OFA (Large + Caption)": OFACaptionEngine,
     "Socratic Models": SocraticModelCaptionEngine,
     "IC3": IC3CaptionEngine,
+    "ChapCaptioner": ChatCaptionerEngine
 }
 
 CAPTION_ENGINES_CLI: Dict[str, Type[CaptionEngine]] = {
@@ -28,4 +30,6 @@ CAPTION_ENGINES_CLI: Dict[str, Type[CaptionEngine]] = {
     "ofa": OFACaptionEngine,
     "socratic-models": SocraticModelCaptionEngine,
     "ic3": IC3CaptionEngine,
+    "chatcaptioner": ChatCaptionerEngine
+
 }

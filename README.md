@@ -117,6 +117,11 @@ Socratic Models: Composing Zero-Shot Multimodal Reasoning with Language
 
 -   "socratic-models"
 
+ChatCaptioner: ChatGPT Asks, BLIP-2 Answers: Automatic Questioning Towards Enriched Visual Descriptions ([url](https://github.com/Vision-CAIR/ChatCaptioner/tree/main/ChatCaptioner))
+- "chatcaptioner"
+
+
+
 ### Language Modeling
 
 OpenAI (Requires setting the `OPENAI_API_KEY` and `OPENAI_API_ORG` environment variables):
