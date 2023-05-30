@@ -50,6 +50,8 @@ from .openai_engine import (  # noqa: F401
     GPT3Davinci3,
     OpenAI,
 )
+from .vertex_engine import PaLMEngine
+
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "ChatGPT": ChatGPT,
@@ -89,6 +91,7 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "Stable LM Base (3B)": StableLMBase3B,
     "Stable LM Base (7B)": StableLMBase7B,
     "Bard": BardEngine,
+    "PaLM": PaLMEngine,
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
@@ -129,6 +132,7 @@ LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "stable_lm_base_3B": StableLMBase3B,
     "stable_lm_base_7B": StableLMBase7B,
     "bard": BardEngine,
+    "palm": PaLMEngine,
 }
 
 LM_LOCAL_ENGINES: Set[str] = {

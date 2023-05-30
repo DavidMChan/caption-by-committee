@@ -1,9 +1,12 @@
 # flake8: noqa
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, TypedDict, Optional
 
 from PIL import Image
 import logging
+import torch
+import numpy as np
+from nltk.corpus import stopwords
 
 from cbc.caption.base import CaptionEngine
 from cbc.caption.utils import postprocess_caption
@@ -14,11 +17,68 @@ from cbc.lm.huggingface_local_engine import HuggingFaceLocalLMEngine
 from cbc.lm.huggingface_llama_engine import HuggingFaceLlamaLMEngine
 from cbc.plugins.base import ImagePlugin
 from cbc.caption.ic3.guards import GUARDS
+from cbc.utils.print_utils import print_tokens_weighted
 
 
 DEFAULT_CBC_PROMPT = """This is a hard problem. Carefully summarize in ONE detailed sentence the following captions by different (possibly incorrect) people describing the same thing. Be sure to describe everything, and identify when you're not sure.{prompt_body}
 Captions: {image_captions}.
 {image_info}Summary:  I'm not sure, but the image is likely of"""
+
+
+class LikelihoodOutput(TypedDict):
+    log_probs: torch.Tensor
+    ranks: torch.Tensor
+    normalized_rank_score: torch.Tensor
+    output_topk_tokens: List[List[str]]
+    output_tokens: List[str]
+
+
+FILTER_TOKENS = {
+    "or",
+    ",",
+    "possibly",
+    "probably",
+    "likely",
+    "maybe",
+    "perhaps",
+    "could",
+    "might",
+    "a",
+    "and",
+    "potentially",
+}
+FILTER_TOKENS.update(stopwords.words("english"))
+
+
+def _sort_captions(input_captions: List[str], scores: List[LikelihoodOutput]) -> List[str]:
+
+    # Generate the scores for each input caption
+    output_scores = []
+    for score in scores:
+        # Filter out any tokens which are in the list of filter tokens
+        # log_probs = score["log_probs"][1:]
+        # Use rank instead of log_probs
+        log_probs = [np.log2(60000 - r.cpu().item()) for r in score["ranks"][1:]]
+
+        tokens = [t.replace("Ġ", "") for t in score["output_tokens"][1:]]
+        scnf = list(zip(log_probs, tokens))
+        sc = [(s, t) for s, t in zip(log_probs, tokens) if t not in FILTER_TOKENS]
+        output_scores.append(np.mean(np.stack([s[0] for s in sc])))
+        # Print the weighted tokens, and their weights
+        # print_tokens_weighted(
+        #     [f"{t} ({w:.3f})" for w, t in scnf], [s[0] for s in scnf], strike=[t in FILTER_TOKENS for t in tokens]
+        # )
+        print("Caption Score (Higher is better): {:.3f}".format(output_scores[-1]))
+        print_tokens_weighted(
+            [f"{t} ({w})" for w, t in zip(score["ranks"][1:], tokens)],
+            [s[0] for s in scnf],
+            strike=[t in FILTER_TOKENS for t in tokens],
+        )
+
+    # Sort input_captions by output_scores
+    output_captions = [s for _, s in sorted(zip(output_scores, input_captions), reverse=True)]
+
+    return output_captions
 
 
 def get_prompt_for_candidates(
@@ -69,14 +129,19 @@ def caption_by_committee(
     guard_failure_limit: int = 5,
     num_outputs: int = 1,
     lm_temperature: float = 1.0,
+    select_best: bool = False,
+    force_candidate_captions: Optional[List[str]] = None,
 ) -> Union[str, List[str]]:
 
     """
     Generate a caption for an image using a committee of captioning models.
     """
-    captions = caption_engine(raw_image, n_captions=n_captions, temperature=caption_engine_temperature)
-    if verbose:
-        logging.debug(f"Candidate Captions: {captions}")
+    if force_candidate_captions is not None:
+        captions = force_candidate_captions
+    else:
+        captions = caption_engine(raw_image, n_captions=n_captions, temperature=caption_engine_temperature)
+
+    logging.debug(f"Candidate Captions: {captions}")
 
     # TODO: This needs to be updated so that it's set on a per-model basis, and not based on classes.
     if postprocess == "default":
@@ -134,4 +199,11 @@ def caption_by_committee(
             f"Failed captions: {failed_captions}"
         )
 
-    return output_captions
+    # Evaluate the output summaries using the likelihood under the caption engine, and sort them
+    # in descending order of likelihood.add()
+    evaluated_captions = [caption_engine.likelihood(raw_image, s) for s in output_captions]
+    sorted_evaluated_captions = _sort_captions(output_captions, evaluated_captions)
+
+    if select_best:
+        return sorted_evaluated_captions[0]
+    return sorted_evaluated_captions

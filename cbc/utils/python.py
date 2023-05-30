@@ -1,6 +1,7 @@
 import functools
 import hashlib
 import os
+import time
 from contextlib import AbstractContextManager
 from typing import Any, Generic, List, Optional, Type, TypeVar
 
@@ -23,6 +24,26 @@ class chdir(AbstractContextManager):  # noqa: N801
 
     def __exit__(self, *excinfo) -> None:  # type: ignore
         os.chdir(self._old_cwd.pop())
+
+
+def retry(func):
+    """Retry a function if it throws an exception."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        error = None
+        for backoff in [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                # Backoff and try again
+                time.sleep(backoff)
+                error = e
+                continue
+
+        raise error
+
+    return wrapper
 
 
 T = TypeVar("T")

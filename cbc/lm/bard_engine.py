@@ -28,6 +28,7 @@ import re
 import string
 import time
 from typing import Any, List, Optional
+from ratelimit import limits, sleep_and_retry
 
 import requests
 
@@ -41,6 +42,7 @@ class Chatbot:
     Parameters
         session_id: str
             The __Secure-1PSID cookie.
+        proxy: str
     """
 
     __slots__ = [
@@ -53,7 +55,7 @@ class Chatbot:
         "session",
     ]
 
-    def __init__(self, session_id):
+    def __init__(self, session_id: str, proxy: str = None):
         headers = {
             "Host": "bard.google.com",
             "X-Same-Domain": "1",
@@ -67,19 +69,27 @@ class Chatbot:
         self.response_id = ""
         self.choice_id = ""
         self.session = requests.Session()
+        if proxy:
+            self.session.proxies.update(
+                {
+                    "http": proxy,
+                    "https": proxy,
+                },
+            )
         self.session.headers = headers
         self.session.cookies.set("__Secure-1PSID", session_id)
-
         self.SNlM0e = self.__get_snlm0e()
 
     def __get_snlm0e(self):
         resp = self.session.get(url="https://bard.google.com/", timeout=10)
         # Find "SNlM0e":"<ID>"
-        if resp.status_code != requests.codes.ok:
+        if resp.status_code != 200:
             raise Exception("Could not get Google Bard")
         SNlM0e = re.search(r"SNlM0e\":\"(.*?)\"", resp.text).group(1)
         return SNlM0e
 
+    @sleep_and_retry
+    @limits(calls=1, period=180)
     def ask(self, message: str) -> dict:
         """
         Send a message to Google Bard and return the response.
@@ -88,7 +98,7 @@ class Chatbot:
         """
         # url params
         params = {
-            "bl": "boq_assistant-bard-web-server_20230419.00_p0",
+            "bl": "boq_assistant-bard-web-server_20230514.20_p0",
             "_reqid": str(self._reqid),
             "rt": "c",
         }
@@ -143,25 +153,35 @@ class BardEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         # Filter the prompt (one-off experiment)
         new_prompt = prompt.replace(
             "Summary:",
-            "\nComplete the following sentence according to the task above. Output the completion as JSON with the key 'detailed_completion'. \n",
+            "\nComplete the following sentence according to the task above. Output the completion as JSON with the key 'detailed_completion'.\n",
         )
+        new_prompt = (
+            new_prompt.replace("I'm not sure, but the image is likely of", "").strip()
+            + "\nSentence: I'm not sure, but the captions likely describe"
+        )
+        # REPLACE ANYTHING EVEN REMOTELY RELATED TO IMAGES/PICTURES WITH THE WORD "CAPTION"
+        new_prompt = re.sub(
+            r"image|picture|photo|photograph|drawing|painting|illustration", "caption", new_prompt, flags=re.IGNORECASE
+        )
+
         outputs = []
         for _ in range(n_completions):
             for i in range(5):
+                logging.info("Sending prompt to BARD engine: %s", new_prompt)
+                bard_result = self._chatbot.ask(new_prompt)["content"]
                 try:
-                    output = self._chatbot.ask(new_prompt)["content"]
                     # Get the completion from any JSON embedded in the output. First, get content between the first
                     # pair of curly braces. Then, parse the JSON and get the value of the key "completion".
-                    output = output[output.find("{") : output.find("}") + 1]
+                    logging.info(f"Got output from BARD engine: {bard_result}")
+                    output = bard_result[bard_result.find("{") : bard_result.find("}") + 1]
                     output = json.loads(output)["detailed_completion"]
                     outputs.append(output)
                     break
                 except (json.JSONDecodeError, IndexError):
-                    logging.error("Error parsing output from BARD engine... retrying.")
+                    logging.error(f"Error parsing output from BARD engine: {bard_result}... retrying.")
                     time.sleep(i**1.5)
                     continue
             else:

@@ -140,3 +140,7 @@ scripts/*.json
 *.jpg
 *.zip
 *.output*
+*.tmp
+*.bak
+
+test_images/

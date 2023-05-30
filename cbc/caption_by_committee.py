@@ -56,6 +56,7 @@ from cbc.caption.ic3.caption_by_committee import DEFAULT_CBC_PROMPT, caption_by_
     default="default",
     help="Whether to apply postprocessing to the final caption.",
 )
+@click.option("--num-output-captions", type=int, default=1, help="Number of captions to output.")
 @click.option(
     "--verbose",
     is_flag=True,
@@ -71,6 +72,7 @@ def caption(
     prompt: str,
     plugin: List[str],
     postprocessing: str,
+    num_output_captions: int,
     verbose: bool,
 ) -> None:
     """
@@ -112,6 +114,7 @@ def caption(
         lm_prompt=prompt,
         postprocess=postprocessing,
         plugins=plugins,
+        num_outputs=num_output_captions,
     )
 
     logging.debug(f"Caption: {summary}")

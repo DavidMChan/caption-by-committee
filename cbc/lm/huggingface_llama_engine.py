@@ -31,7 +31,7 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         if temperature is not None and temperature > 0:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 temperature=temperature,
                 do_sample=True,
@@ -39,14 +39,14 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         elif n_completions > 1:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 do_sample=True,
             )
         else:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 do_sample=False,
             )
@@ -67,7 +67,7 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         # Beam search here doesn't work, since it requires too much GPU memory.
         outputs = self._generator.generate(
             input,
-            max_new_tokens=256,
+            max_new_tokens=128,
             do_sample=True,
             temperature=1.0,
             num_return_sequences=1,
