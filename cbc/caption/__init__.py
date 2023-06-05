@@ -17,7 +17,7 @@ CAPTION_ENGINES: Dict[str, Type[CaptionEngine]] = {
     "OFA (Large + Caption)": OFACaptionEngine,
     "Socratic Models": SocraticModelCaptionEngine,
     "IC3": IC3CaptionEngine,
-    "ChapCaptioner": ChatCaptionerEngine
+    "ChapCaptioner": ChatCaptionerEngine,
 }
 
 CAPTION_ENGINES_CLI: Dict[str, Type[CaptionEngine]] = {
@@ -30,6 +30,5 @@ CAPTION_ENGINES_CLI: Dict[str, Type[CaptionEngine]] = {
     "ofa": OFACaptionEngine,
     "socratic-models": SocraticModelCaptionEngine,
     "ic3": IC3CaptionEngine,
-    "chatcaptioner": ChatCaptionerEngine
-
+    "chatcaptioner": ChatCaptionerEngine,
 }
