@@ -10,15 +10,15 @@ def has_listing_pattern(s):
 
 def compute_and_add_ocr_recall(samples: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     english_dict = enchant.Dict('en_US')
-    
+
     for sample in tqdm.tqdm(samples):
         ocr_list = sample['meta']['ocr_tokens']
-        ocr_list = list(set([token.lower() for token in ocr_list]))
+        ocr_list = list({token.lower() for token in ocr_list})
         # Only keep the OCR tokens that are in English dictionary
         ocr_list = [token for token in ocr_list if english_dict.check(token)]
-        
+
         # Exclude those samples with no valid OCR tokens
-        if len(ocr_list) == 0:
+        if not ocr_list:
             sample['ocr_fraction'] = -1
             sample['ocr_mentioned'] = 0
             sample['gt_ocr_count'] = 0
@@ -27,13 +27,8 @@ def compute_and_add_ocr_recall(samples: List[Dict[str, Any]]) -> List[Dict[str, 
             continue
 
         summary = sample['candidate_summary'].lower()
-        
-        # Count the number of ground truth OCR tokens that are mentioned in this summary
-        sample_mentioned = 0
-        for token in ocr_list:
-            if token in summary:
-                sample_mentioned += 1
-        
+
+        sample_mentioned = sum(1 for token in ocr_list if token in summary)
         # Fraction of ground truth OCR tokens mentioned
         sample['ocr_fraction'] = sample_mentioned / len(ocr_list)
         # Number of ground truth OCR tokens mentioned
@@ -44,5 +39,5 @@ def compute_and_add_ocr_recall(samples: List[Dict[str, Any]]) -> List[Dict[str, 
         sample['has_listing'] = has_listing_pattern(summary)
         # Whether the sample has at least one ground truth OCR tokens
         sample['has_gt_ocr'] = True
-    
+
     return samples

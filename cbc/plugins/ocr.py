@@ -117,7 +117,7 @@ def get_cluster_threshold(image):
 def filter_and_sort_ocr(image, results):
     area_threshold = get_area_threshold(image)
     cluster_threshold = get_cluster_threshold(image)
-    
+
     # Filter out OCR tokens with bounding box area <= area threshold or confidence <= confidence threshold
     ocr_filtered = []
     for i in range(len(results[0])):
@@ -127,14 +127,14 @@ def filter_and_sort_ocr(image, results):
         confidence = cur_ocr[1][1]
         if ocr_area > area_threshold and confidence > CONFIDENCE_THRESHOLD:
             ocr_filtered.append(cur_ocr)
-            
+
     ocr_filtered_and_sorted = []
-            
-    if len(ocr_filtered) > 0:
+
+    if ocr_filtered:
         # Sort OCR tokens based on clustering
         ocr_filtered_and_sorted = cluster_and_sort_ocr_tokens(ocr_filtered, cluster_threshold)
         ocr_filtered_and_sorted = [ocr[1][0] for ocr in ocr_filtered_and_sorted]
-    
+
     return ocr_filtered_and_sorted
 
 class OcrPlugin(ImagePlugin):
