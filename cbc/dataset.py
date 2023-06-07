@@ -9,16 +9,16 @@ import tqdm
 from PIL import Image
 
 from cbc.caption import CAPTION_ENGINES_CLI
-from cbc.caption.ic3.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
 from cbc.caption.utils import postprocess_caption
+from cbc.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
 from cbc.lm import LM_ENGINES_CLI, LM_LOCAL_ENGINES
 from cbc.metrics import (
     compute_and_add_base_metrics,
     compute_and_add_clip_recall,
     compute_and_add_content_recall,
     compute_and_add_mauve_score,
-    compute_and_add_object_hallucinations,
     compute_and_add_self_bleu,
+    compute_and_add_ocr_recall
 )
 from cbc.plugins import IMAGE_PLUGINS
 
@@ -110,9 +110,6 @@ def evaluate_dataset(
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
 
-    # Save the output to a temporary file which will persist in case of a crash
-    _save_json_tmp_file(output_json_path, samples)
-
     # 2.1 Compute the plugin features for each image (if not already computed)
     for plugin_name in plugin:
         print(f"Loading plugin {plugin_name}...")
@@ -121,7 +118,7 @@ def evaluate_dataset(
         for sample in tqdm.tqdm(samples):
             if sample.get("plugin_outputs", None) is None:
                 sample["plugin_outputs"] = {}
-            if sample["plugin_outputs"].get(plugin_name, None) is None or overwrite_candidates:
+            if sample["plugin_outputs"].get(plugin_name, None) is None:
                 sample["plugin_outputs"][plugin_name] = pl(
                     Image.open(os.path.join(image_root_dir or ".", sample[image_path_key])).convert("RGB")
                 )
@@ -141,12 +138,12 @@ def evaluate_dataset(
     for sample in tqdm.tqdm(samples):
         if sample.get("candidate_summary") is None or overwrite_candidate_summaries:
             sample["candidate_summary_prompt"] = get_prompt_for_candidates(
-                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
+                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
             )
             sample["candidate_summary"] = postprocess_caption(lm.best(prompt=sample["candidate_summary_prompt"]))
         if sample.get("reference_summary") is None or overwrite_candidate_summaries:
             sample["reference_summary_prompt"] = get_prompt_for_candidates(
-                sample[reference_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
+                sample[reference_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
             )
             sample["reference_summary"] = postprocess_caption(lm.best(prompt=sample["reference_summary_prompt"]))
 
@@ -181,10 +178,10 @@ def evaluate_dataset(
     # 8. Compute the Self-BLEU for the candidates/references (if not already computed)
     print("Computing Self-BLEU...")
     samples = compute_and_add_self_bleu(samples, candidate_key, reference_key)
-
-    # 9. Compute the hallucination metrics for each set of candidates (if not already computed)
-    print("Computing Object Hallucinations...")
-    samples = compute_and_add_object_hallucinations(samples, candidate_key, reference_key)
+    
+    # 9. Compute the OCR Recall
+    print("Computing OCR recall...")
+    samples = compute_and_add_ocr_recall(samples)
 
     # Save the output to a temporary file which will persist in case of a crash
     _save_json_tmp_file(output_json_path, samples)
@@ -197,20 +194,20 @@ def evaluate_dataset(
         json.dump({"samples": samples, "metrics": metrics}, f, indent=2)
 
     # Remove the temporary file
-    if os.path.exists(f"{output_json_path}.tmp"):
-        os.remove(f"{output_json_path}.tmp")
+    if os.path.exists(output_json_path + ".tmp"):
+        os.remove(output_json_path + ".tmp")
 
     # 9. Print the results to the console
     print(json.dumps(metrics, indent=2))
 
 
 def _save_json_tmp_file(output_json_path: str, samples: List[Dict[str, Any]]) -> None:
-    with open(f"{output_json_path}.tmp", "w") as f:
+    with open(output_json_path + ".tmp", "w") as f:
         json.dump(samples, f)
 
 
 def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
-    return {
+    metrics = {
         "standard": {
             # Base Scores
             "candidate_summary_bleu_1": float(np.mean([s["scores"]["candidate_summary_bleu_1"] for s in samples])),
@@ -325,16 +322,16 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
                 np.mean([s["scores"]["content_recall"]["baseline_verb_fuzzy_recall"] for s in samples])
             ),
         },
-        # Hallucination Scores
-        "hallucinations": {
-            "hallucinated_objects_percentage": float(np.sum([s["hallucinated_object_count"] for s in samples]))
-            / float(np.sum([s["object_count"] for s in samples])),
-            "hallucinated_captions_percentage": float(
-                np.sum([1 for s in samples if s["hallucinated_object_count"] > 0])
-            )
-            / float(len(samples)),
-            "average_hungarian_matching_score": float(
-                np.mean([s["scores"]["hungarian_matching_score"] for s in samples])
-            ),
-        },
+        # OCR Scores
+        "ocr_recall": {
+            "average_ocr_fraction": float(np.mean([s['ocr_fraction'] for s in samples if s['has_gt_ocr']])),
+            "overall_ocr_fraction": float(np.sum([s['ocr_mentioned'] for s in samples])) 
+                                        / float(np.sum([s['gt_ocr_count'] for s in samples])),
+            "overall_true_ocr_fraction": float(np.sum([s['ocr_mentioned'] for s in samples if s['has_listing'] == False]))
+                                        / float(np.sum([s['gt_ocr_count'] for s in samples if s['has_listing'] == False])),
+            "ocr_listing_count": float(np.sum([1 for s in samples if s['has_listing']])),
+            "has_gt_ocr_count": float(np.sum([1 for s in samples if s['has_gt_ocr']])),
+        }, 
     }
+
+    return metrics
