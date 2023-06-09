@@ -109,7 +109,12 @@ def evaluate_dataset(
         # The baseline is always the first candidate
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
+            
+        _save_json_tmp_file(output_json_path, samples)
 
+    # Save the output to a temporary file which will persist in case of a crash
+    _save_json_tmp_file(output_json_path, samples)
+    
     # 2.1 Compute the plugin features for each image (if not already computed)
     for plugin_name in plugin:
         print(f"Loading plugin {plugin_name}...")
