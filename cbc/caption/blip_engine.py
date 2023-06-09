@@ -125,12 +125,11 @@ def _generate_opt_with_temperature(
         # It seems like this is broken in the old version of transformers
         if version.parse(transformers.__version__) >= version.parse("4.28.0"):
             query_embeds = inputs_opt
+        elif use_nucleus_sampling:
+            query_embeds = inputs_opt.repeat_interleave(num_captions, dim=0)
+            num_beams = 1
         else:
-            if use_nucleus_sampling:
-                query_embeds = inputs_opt.repeat_interleave(num_captions, dim=0)
-                num_beams = 1
-            else:
-                query_embeds = inputs_opt.repeat_interleave(num_beams, dim=0)
+            query_embeds = inputs_opt.repeat_interleave(num_beams, dim=0)
 
         outputs = model.opt_model.generate(
             input_ids=input_ids,
@@ -260,7 +259,7 @@ class BLIPCaptionEngine(CaptionEngine):
 
     def get_ask_caption(self, raw_image: Image, question: str = "") -> str:
         image = self._vis_processors["eval"](raw_image).unsqueeze(0).to(self._device)  # type: ignore
-        if question == "":
+        if not question:
             samples = {"image": image}
         else:
             samples = {"image": image, "prompt": question}
@@ -358,7 +357,7 @@ class BLIP2CaptionEngine(CaptionEngine):
         )
         if _gen_fn is None:
             raise ValueError(f"Architecture {self._architecture} not supported for BLIP2CaptionEngine.")
-        if question == "":
+        if not question:
             samples = {"image": image}
         else:
             samples = {"image": image, "prompt": question}

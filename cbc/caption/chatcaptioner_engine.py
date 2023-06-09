@@ -56,16 +56,15 @@ def get_chat_log(questions, answers, last_n=-1):
 
     for i in range(len(answers)):
         chat_log = chat_log + template.format(questions[i], answers[i])
-    if n_addition_q:
-        chat_log = chat_log + "Question: {}".format(questions[-1])
-    else:
-        chat_log = chat_log[:-2]  # remove the last '/n'
-    return chat_log
+    return (
+        f"{chat_log}Question: {questions[-1]}"
+        if n_addition_q
+        else chat_log[:-2]
+    )
 
 
 def prepare_gpt_prompt(task_prompt, questions, answers, sub_prompt):
-    gpt_prompt = "\n".join([task_prompt, get_chat_log(questions, answers), sub_prompt])
-    return gpt_prompt
+    return "\n".join([task_prompt, get_chat_log(questions, answers), sub_prompt])
 
 
 class AskQuestions:
@@ -86,23 +85,17 @@ class AskQuestions:
     def ask_question(self):
         if len(self.questions) == 0:
             # first question is given by human to request a general discription
-            question = FIRST_QUESTION
-        else:
-            gpt_prompt = prepare_gpt_prompt(
-                QUESTION_INSTRUCTION, self.questions, self.answers, SUB_QUESTION_INSTRUCTION
-            )
-            question = self._lm_engine.best(gpt_prompt)
-
-        return question
+            return FIRST_QUESTION
+        gpt_prompt = prepare_gpt_prompt(
+            QUESTION_INSTRUCTION, self.questions, self.answers, SUB_QUESTION_INSTRUCTION
+        )
+        return self._lm_engine.best(gpt_prompt)
 
     def question_trim(self, question):
         question = question.split("Question: ")[-1].replace("\n", " ").strip()
         if "Answer:" in question:  # Some models make up an answer after asking. remove it
             q, a = question.split("Answer:")[:2]
-            if len(q) == 0:  # some not so clever models will put the question after 'Answer:'.
-                question = a.strip()
-            else:
-                question = q.strip()
+            question = a.strip() if len(q) == 0 else q.strip()
         return question
 
     def answer_question(self):
@@ -116,8 +109,7 @@ class AskQuestions:
             ]
         )
 
-        answer = self.blip2.get_ask_caption(self.img, blip2_prompt)
-        return answer
+        return self.blip2.get_ask_caption(self.img, blip2_prompt)
 
     def answer_trim(self, answer):
         answer = answer.split("Question:")[0].replace("\n", " ").strip()
@@ -131,13 +123,13 @@ class AskQuestions:
             question = self.question_trim(question)
             self.questions.append(question)
 
-            logging.debug("LM_Egine: {}".format(question))
+            logging.debug(f"LM_Egine: {question}")
 
             answer = self.answer_question()
             answer = self.answer_trim(answer)
             self.answers.append(answer)
 
-            logging.debug("BLIP-2: {}".format(answer))
+            logging.debug(f"BLIP-2: {answer}")
 
         logging.debug("--------Chat Ends----------")
 
@@ -179,15 +171,15 @@ class ChatCaptionerEngine(CaptionEngine):
         return [self.get_baseline_caption(raw_image) for _ in range(n_captions)]
 
     def get_baseline_caption(self, image: Image, n_rounds: int = 10, n_blip2_context: int = -1, print_mode: str = "no"):
-        results = {}
         chat = AskQuestions(image, self.captioner, n_blip2_context=n_blip2_context, lm_engine=self._language_model)
         questions, answers = chat.chatting(n_rounds, print_mode=print_mode)
         summary, summary_prompt = summarize_chat(questions, answers, self._language_model)
         logging.debug(f"Summary Prompt: {summary_prompt}")
         logging.debug(f"Summary: {summary}")
-        results["ChatCaptioner"] = {"caption": summary, "chat": summary_prompt}
-        results["BLIP2+OurPrompt"] = {"caption": answers[0]}
-
+        results = {
+            "ChatCaptioner": {"caption": summary, "chat": summary_prompt},
+            "BLIP2+OurPrompt": {"caption": answers[0]},
+        }
         # Default BLIP2 caption
         caption = self.captioner.get_baseline_caption(image)
         results["BLIP2"] = {"caption": caption}
