@@ -1,13 +1,11 @@
+import logging
+from typing import List, Optional, Union
+
 from PIL.Image import Image
 from tqdm import tqdm
-import torch
-import logging
-from typing import List, Union, Optional
 
 from cbc.caption.base import CaptionEngine
 from cbc.lm import LMEngine
-from cbc.utils.pytorch import select_device
-
 
 QUESTION_INSTRUCTION = (
     "I have an image. "
@@ -57,7 +55,7 @@ def get_chat_log(questions, answers, last_n=-1):
     for i in range(len(answers)):
         chat_log = chat_log + template.format(questions[i], answers[i])
     if n_addition_q:
-        chat_log = chat_log + "Question: {}".format(questions[-1])
+        chat_log = chat_log + f"Question: {questions[-1]}"
     else:
         chat_log = chat_log[:-2]  # remove the last '/n'
     return chat_log
@@ -131,13 +129,13 @@ class AskQuestions:
             question = self.question_trim(question)
             self.questions.append(question)
 
-            logging.debug("LM_Egine: {}".format(question))
+            logging.debug(f"LM_Egine: {question}")
 
             answer = self.answer_question()
             answer = self.answer_trim(answer)
             self.answers.append(answer)
 
-            logging.debug("BLIP-2: {}".format(answer))
+            logging.debug(f"BLIP-2: {answer}")
 
         logging.debug("--------Chat Ends----------")
 

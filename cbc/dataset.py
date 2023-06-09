@@ -17,6 +17,7 @@ from cbc.metrics import (
     compute_and_add_clip_recall,
     compute_and_add_content_recall,
     compute_and_add_mauve_score,
+    compute_and_add_ocr_recall,
     compute_and_add_self_bleu,
     compute_and_add_ocr_recall,
 )
@@ -199,20 +200,20 @@ def evaluate_dataset(
         json.dump({"samples": samples, "metrics": metrics}, f, indent=2)
 
     # Remove the temporary file
-    if os.path.exists(f"{output_json_path}.tmp"):
-        os.remove(f"{output_json_path}.tmp")
+    if os.path.exists(output_json_path + ".tmp"):
+        os.remove(output_json_path + ".tmp")
 
     # 9. Print the results to the console
     print(json.dumps(metrics, indent=2))
 
 
 def _save_json_tmp_file(output_json_path: str, samples: List[Dict[str, Any]]) -> None:
-    with open(f"{output_json_path}.tmp", "w") as f:
+    with open(output_json_path + ".tmp", "w") as f:
         json.dump(samples, f)
 
 
 def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
-    return {
+    metrics = {
         "standard": {
             # Base Scores
             "candidate_summary_bleu_1": float(np.mean([s["scores"]["candidate_summary_bleu_1"] for s in samples])),
@@ -340,3 +341,5 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
             "has_gt_ocr_count": float(np.sum([1 for s in samples if s["has_gt_ocr"]])),
         },
     }
+
+    return metrics

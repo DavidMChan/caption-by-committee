@@ -1,11 +1,11 @@
 from typing import Dict, Type
 
 from .base import CaptionEngine
-from .blip_engine import BLIP2COCOBase, BLIP2COCOLarge, BLIP2COCOT5Large, BLIPBase, BLIPLarge, BLIP2COCOT5XLarge
+from .blip_engine import BLIP2COCOBase, BLIP2COCOLarge, BLIP2COCOT5Large, BLIP2COCOT5XLarge, BLIPBase, BLIPLarge
+from .chatcaptioner_engine import ChatCaptionerEngine
 from .ic3_engine import IC3CaptionEngine
 from .ofa_engine import OFACaptionEngine
 from .socratic_models import SocraticModelCaptionEngine
-from .chatcaptioner_engine import ChatCaptionerEngine
 
 CAPTION_ENGINES: Dict[str, Type[CaptionEngine]] = {
     "BLIP (Large)": BLIPLarge,

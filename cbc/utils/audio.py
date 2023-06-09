@@ -23,7 +23,6 @@ NO TRANSCRIPT AVAILABLE
 
 
 def gcp_transcribe(path: str) -> str:
-
     try:
         from google.cloud import speech
     except ImportError:
@@ -148,7 +147,6 @@ def _create_aws_transcribe_job_if_necessary(transcribe_client: Any, job_name: st
 
 
 def whisper_transcribe(path: Union[str, bytes], model: str = "large-v2") -> Tuple[str, str]:
-
     logging.debug("Loading audio...")
 
     if isinstance(path, str):
@@ -184,7 +182,6 @@ def whisper_transcribe(path: Union[str, bytes], model: str = "large-v2") -> Tupl
 
 
 def load_audio_to_wav_bytes(path: str) -> Optional[bytes]:
-
     # Use FFMPG and pipe the output to stdout, then read it
     ffmpeg = subprocess.Popen(
         ["ffmpeg", "-i", path, "-f", "wav", "-"],

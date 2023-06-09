@@ -69,7 +69,6 @@ def main(
     image_root_dir: Optional[str] = None,
     overwrite_candidates: bool = False,
 ):
-
     # Load the dataset
     with open(dataset_json_path) as f:
         dataset = json.load(f)

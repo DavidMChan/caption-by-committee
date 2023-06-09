@@ -30,7 +30,6 @@ def self_bleu(candidates: List[str]) -> float:
 def compute_and_add_self_bleu(
     samples: List[Dict[str, Any]], candidate_key: str, reference_key: str
 ) -> List[Dict[str, Any]]:
-
     for sample in tqdm.tqdm(samples):
         if "scores" not in sample:
             sample["scores"] = {}

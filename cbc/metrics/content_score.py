@@ -79,7 +79,6 @@ def fuzzy_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN"
 
 
 def compute_and_add_content_recall(samples: List[Dict[str, Any]], reference_key: str) -> List[Dict[str, Any]]:
-
     for sample in tqdm.tqdm(samples):
         if "scores" not in sample:
             sample["scores"] = {}

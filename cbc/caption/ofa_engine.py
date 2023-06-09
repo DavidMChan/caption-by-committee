@@ -54,7 +54,7 @@ def _get_ofa_model(model: str) -> Tuple[str, str]:
         logging.debug(f"[Fetching OFA] Running git lfs pull in {cache_dir}...")
         try:
             output = subprocess.check_output(["git", "lfs", "pull"])
-            logging.debug(f"[Fetching OFA] git lfs pull output: {str(output)}")
+            logging.debug(f"[Fetching OFA] git lfs pull output: {output!s}")
         except subprocess.CalledProcessError as e:
             logging.error(f"[Fetching OFA] git lfs pull failed: {e}")
             raise
@@ -94,7 +94,6 @@ class OFACaptionEngine(CaptionEngine):
         return self.tokenizer([self.prompt + postfix], return_tensors="pt").input_ids.to(self.device)
 
     def __call__(self, raw_image: Image.Image, n_captions: int = 1, temperature: Optional[float] = 1.0) -> List[str]:
-
         patch_img = self._preprocess_image(raw_image)
         inputs = self._get_language_prompt()
 
@@ -132,7 +131,6 @@ class OFACaptionEngine(CaptionEngine):
         return baseline_caption
 
     def likelihood(self, raw_image: Image, caption: str) -> Dict[str, torch.Tensor]:
-
         caption = " " + caption.lower().replace(
             ".", ""
         )  # Super weird quirk in how the captions are generated, requires a space at the beginning
