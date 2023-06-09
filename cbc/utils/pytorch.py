@@ -4,7 +4,6 @@ import torch
 
 
 def select_device(device: Optional[str] = None) -> Optional[str]:
-
     if device is None:
         # Check if CUDA is available
         if torch.cuda.is_available():

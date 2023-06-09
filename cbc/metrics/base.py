@@ -59,7 +59,6 @@ def _cm_kys_mv(samples: List[Dict[str, Any]], c_key: str, ref_key: str) -> List[
 
 
 def compute_and_add_base_metrics(samples: List[Dict[str, Any]], reference_key: str) -> List[Dict[str, Any]]:
-
     # Compute the BLEU, ROUGE, and CIDEr scores
     if "candidate_summary" in samples[0]:
         samples = _cm_kys(samples, "candidate_summary", reference_key)

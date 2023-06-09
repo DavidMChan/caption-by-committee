@@ -50,7 +50,6 @@ class OpenAIChatEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         # Filter the prompt (one-off experiment)
         prompt = prompt.replace("Summary:", "\nComplete the following sentence according to the task above:\nSummary: ")
 

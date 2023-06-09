@@ -28,9 +28,9 @@ import re
 import string
 import time
 from typing import Any, List, Optional
-from ratelimit import limits, sleep_and_retry
 
 import requests
+from ratelimit import limits, sleep_and_retry
 
 from cbc.lm.base import LMEngine
 from cbc.utils.python import singleton

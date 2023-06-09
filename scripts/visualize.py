@@ -201,7 +201,6 @@ with st.expander("Noun/Verb Recall Metrics"):
         )
 
 with st.expander("Caption Lengths"):
-
     # Count the number of commas and visualize with altair
     st.write("")
     df = pd.DataFrame(

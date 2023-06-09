@@ -7,9 +7,11 @@ try:
     from vertexai.preview.language_models import TextGenerationModel
 except ImportError:
     TextGenerationModel = None
-from .base import LMEngine
-from typing import List, Optional, Any
+from typing import Any, List, Optional
+
 from ratelimit import limits, sleep_and_retry
+
+from .base import LMEngine
 
 
 class VertexLMEngine(LMEngine):

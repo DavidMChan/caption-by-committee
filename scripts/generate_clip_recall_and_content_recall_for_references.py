@@ -9,7 +9,6 @@ from cbc.metrics.content_score import exact_overlap, fuzzy_overlap
 
 
 def compute_clip_recall(dataset, image_path_key, image_root, reference_key) -> None:
-
     print("Creating feature database...")
     feature_db = _get_image_feature_db(dataset, image_path_key, image_root)
 
@@ -38,7 +37,6 @@ def compute_clip_recall(dataset, image_path_key, image_root, reference_key) -> N
 
 
 def compute_content_recall(dataset, reference_key):
-
     for sample in tqdm.tqdm(dataset):
         sample_n_overlap = []
         sample_n_fuzzy_overlap = []
@@ -73,7 +71,6 @@ def main(
     image_root: str = "./",
     reference_key: str = "references",
 ) -> None:
-
     with open(dataset_json_path) as f:
         dataset = json.load(f)
         if isinstance(dataset, dict):

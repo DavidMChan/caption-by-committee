@@ -52,7 +52,6 @@ from .openai_engine import (  # noqa: F401
 )
 from .vertex_engine import PaLMEngine
 
-
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "ChatGPT": ChatGPT,
     "GPT-4": GPT4,

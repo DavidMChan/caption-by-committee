@@ -20,7 +20,6 @@ class HuggingfaceInferenceLMEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         if temperature is not None:
             raise InferenceError("Huggingface API does not support temperature")
 
