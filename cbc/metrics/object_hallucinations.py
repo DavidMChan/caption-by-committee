@@ -66,10 +66,10 @@ def extract_objects_single_caption(target_caption):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-{"role": "system", "content": """
-You are an assistant that parses visually present objects from an image caption. Given an image caption, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
+            {"role": "system", "content": 
+"""You are an assistant that parses visually present objects from an image caption. Given an image caption, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
 
-Stricly abide by the following rules:
+Strictly abide by the following rules:
 - Do not include attributes such as colors or size
 - Do not include objects that are not visually present in the image, such as light, sound, or emotions
 - If the caption is uncertain about an object, include '(possibly)' after the object
@@ -109,7 +109,8 @@ Objects:"""},
             {"role": "user", "content": f"""
 Caption: {target_caption}
 Objects:"""},
-        ]
+        ],
+        temperature=0
     )
     
     OpenAI.USAGE += int(completion.usage.total_tokens) * ChatGPT.COST_PER_TOKEN
@@ -121,10 +122,10 @@ def extract_objects_multiple_captions(references):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": """Y
-ou are an assistant that parses visually present objects from a set of image captions. Given a set of image captions, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
+            {"role": "system", "content": 
+"""You are an assistant that parses visually present objects from a set of image captions. Given a set of image captions, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
 
-Stricly abide by the following rules:
+Strictly abide by the following rules:
 - Do not include attributes such as colors or size
 - Do not include objects that are not visually present in the image, such as light, sound, or emotions
 - If the caption is uncertain about an object, include '(possibly)' after the object
@@ -180,7 +181,8 @@ Objects:"""},
 Captions: 
 {target_caption}
 Objects:"""},
-        ]
+        ],
+        temperature=0
     )
 
     OpenAI.USAGE += int(completion.usage.total_tokens) * ChatGPT.COST_PER_TOKEN
