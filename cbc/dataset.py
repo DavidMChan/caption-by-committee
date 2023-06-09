@@ -9,16 +9,16 @@ import tqdm
 from PIL import Image
 
 from cbc.caption import CAPTION_ENGINES_CLI
-from cbc.caption.ic3.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
 from cbc.caption.utils import postprocess_caption
+from cbc.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
 from cbc.lm import LM_ENGINES_CLI, LM_LOCAL_ENGINES
 from cbc.metrics import (
     compute_and_add_base_metrics,
     compute_and_add_clip_recall,
     compute_and_add_content_recall,
     compute_and_add_mauve_score,
-    compute_and_add_object_hallucinations,
     compute_and_add_self_bleu,
+    compute_and_add_ocr_recall
 )
 from cbc.plugins import IMAGE_PLUGINS
 
@@ -109,12 +109,12 @@ def evaluate_dataset(
         # The baseline is always the first candidate
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
-
+            
         _save_json_tmp_file(output_json_path, samples)
 
     # Save the output to a temporary file which will persist in case of a crash
     _save_json_tmp_file(output_json_path, samples)
-
+    
     # 2.1 Compute the plugin features for each image (if not already computed)
     for plugin_name in plugin:
         print(f"Loading plugin {plugin_name}...")
@@ -123,7 +123,7 @@ def evaluate_dataset(
         for sample in tqdm.tqdm(samples):
             if sample.get("plugin_outputs", None) is None:
                 sample["plugin_outputs"] = {}
-            if sample["plugin_outputs"].get(plugin_name, None) is None or overwrite_candidates:
+            if sample["plugin_outputs"].get(plugin_name, None) is None:
                 sample["plugin_outputs"][plugin_name] = pl(
                     Image.open(os.path.join(image_root_dir or ".", sample[image_path_key])).convert("RGB")
                 )
@@ -143,12 +143,12 @@ def evaluate_dataset(
     for sample in tqdm.tqdm(samples):
         if sample.get("candidate_summary") is None or overwrite_candidate_summaries:
             sample["candidate_summary_prompt"] = get_prompt_for_candidates(
-                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
+                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
             )
             sample["candidate_summary"] = postprocess_caption(lm.best(prompt=sample["candidate_summary_prompt"]))
         if sample.get("reference_summary") is None or overwrite_candidate_summaries:
             sample["reference_summary_prompt"] = get_prompt_for_candidates(
-                sample[reference_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
+                sample[reference_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
             )
             sample["reference_summary"] = postprocess_caption(lm.best(prompt=sample["reference_summary_prompt"]))
 
@@ -184,9 +184,9 @@ def evaluate_dataset(
     print("Computing Self-BLEU...")
     samples = compute_and_add_self_bleu(samples, candidate_key, reference_key)
 
-    # 9. Compute the hallucination metrics for each set of candidates (if not already computed)
-    print("Computing Object Hallucinations...")
-    samples = compute_and_add_object_hallucinations(samples, candidate_key, reference_key)
+    # 9. Compute the OCR Recall
+    print("Computing OCR recall...")
+    samples = compute_and_add_ocr_recall(samples)
 
     # Save the output to a temporary file which will persist in case of a crash
     _save_json_tmp_file(output_json_path, samples)
@@ -215,128 +215,398 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
     return {
         "standard": {
             # Base Scores
-            "candidate_summary_bleu_1": float(np.mean([s["scores"]["candidate_summary_bleu_1"] for s in samples])),
-            "candidate_summary_bleu_2": float(np.mean([s["scores"]["candidate_summary_bleu_2"] for s in samples])),
-            "candidate_summary_bleu_3": float(np.mean([s["scores"]["candidate_summary_bleu_3"] for s in samples])),
-            "candidate_summary_bleu_4": float(np.mean([s["scores"]["candidate_summary_bleu_4"] for s in samples])),
-            "candidate_summary_rouge": float(np.mean([s["scores"]["candidate_summary_rouge"] for s in samples])),
-            "candidate_summary_cider": float(np.mean([s["scores"]["candidate_summary_cider"] for s in samples])),
-            "reference_summary_bleu_1": float(np.mean([s["scores"]["reference_summary_bleu_1"] for s in samples])),
-            "reference_summary_bleu_2": float(np.mean([s["scores"]["reference_summary_bleu_2"] for s in samples])),
-            "reference_summary_bleu_3": float(np.mean([s["scores"]["reference_summary_bleu_3"] for s in samples])),
-            "reference_summary_bleu_4": float(np.mean([s["scores"]["reference_summary_bleu_4"] for s in samples])),
-            "reference_summary_rouge": float(np.mean([s["scores"]["reference_summary_rouge"] for s in samples])),
-            "reference_summary_cider": float(np.mean([s["scores"]["reference_summary_cider"] for s in samples])),
-            "baseline_bleu_1": float(np.mean([s["scores"]["baseline_bleu_1"] for s in samples])),
-            "baseline_bleu_2": float(np.mean([s["scores"]["baseline_bleu_2"] for s in samples])),
-            "baseline_bleu_3": float(np.mean([s["scores"]["baseline_bleu_3"] for s in samples])),
-            "baseline_bleu_4": float(np.mean([s["scores"]["baseline_bleu_4"] for s in samples])),
-            "baseline_rouge": float(np.mean([s["scores"]["baseline_rouge"] for s in samples])),
-            "baseline_cider": float(np.mean([s["scores"]["baseline_cider"] for s in samples])),
+            "candidate_summary_bleu_1": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_bleu_1"] for s in samples]
+                )
+            ),
+            "candidate_summary_bleu_2": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_bleu_2"] for s in samples]
+                )
+            ),
+            "candidate_summary_bleu_3": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_bleu_3"] for s in samples]
+                )
+            ),
+            "candidate_summary_bleu_4": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_bleu_4"] for s in samples]
+                )
+            ),
+            "candidate_summary_rouge": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_rouge"] for s in samples]
+                )
+            ),
+            "candidate_summary_cider": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_cider"] for s in samples]
+                )
+            ),
+            "reference_summary_bleu_1": float(
+                np.mean(
+                    [s["scores"]["reference_summary_bleu_1"] for s in samples]
+                )
+            ),
+            "reference_summary_bleu_2": float(
+                np.mean(
+                    [s["scores"]["reference_summary_bleu_2"] for s in samples]
+                )
+            ),
+            "reference_summary_bleu_3": float(
+                np.mean(
+                    [s["scores"]["reference_summary_bleu_3"] for s in samples]
+                )
+            ),
+            "reference_summary_bleu_4": float(
+                np.mean(
+                    [s["scores"]["reference_summary_bleu_4"] for s in samples]
+                )
+            ),
+            "reference_summary_rouge": float(
+                np.mean(
+                    [s["scores"]["reference_summary_rouge"] for s in samples]
+                )
+            ),
+            "reference_summary_cider": float(
+                np.mean(
+                    [s["scores"]["reference_summary_cider"] for s in samples]
+                )
+            ),
+            "baseline_bleu_1": float(
+                np.mean([s["scores"]["baseline_bleu_1"] for s in samples])
+            ),
+            "baseline_bleu_2": float(
+                np.mean([s["scores"]["baseline_bleu_2"] for s in samples])
+            ),
+            "baseline_bleu_3": float(
+                np.mean([s["scores"]["baseline_bleu_3"] for s in samples])
+            ),
+            "baseline_bleu_4": float(
+                np.mean([s["scores"]["baseline_bleu_4"] for s in samples])
+            ),
+            "baseline_rouge": float(
+                np.mean([s["scores"]["baseline_rouge"] for s in samples])
+            ),
+            "baseline_cider": float(
+                np.mean([s["scores"]["baseline_cider"] for s in samples])
+            ),
             # Mauve Scores
-            "candidate_summary_mauve": float(np.mean([s["scores"]["candidate_summary_mauve"] for s in samples])),
-            "reference_summary_mauve": float(np.mean([s["scores"]["reference_summary_mauve"] for s in samples])),
-            "baseline_mauve": float(np.mean([s["scores"]["baseline_mauve"] for s in samples])),
+            "candidate_summary_mauve": float(
+                np.mean(
+                    [s["scores"]["candidate_summary_mauve"] for s in samples]
+                )
+            ),
+            "reference_summary_mauve": float(
+                np.mean(
+                    [s["scores"]["reference_summary_mauve"] for s in samples]
+                )
+            ),
+            "baseline_mauve": float(
+                np.mean([s["scores"]["baseline_mauve"] for s in samples])
+            ),
             # Self-BLEU
-            "candidate_self_bleu": float(np.mean([s["scores"]["self_bleu"]["candidates"] for s in samples])),
-            "reference_self_bleu": float(np.mean([s["scores"]["self_bleu"]["references"] for s in samples])),
+            "candidate_self_bleu": float(
+                np.mean(
+                    [s["scores"]["self_bleu"]["candidates"] for s in samples]
+                )
+            ),
+            "reference_self_bleu": float(
+                np.mean(
+                    [s["scores"]["self_bleu"]["references"] for s in samples]
+                )
+            ),
         },
         # CLIP Scores
         "clip_recall": {
             "candidate_summary_clip_recall_rank": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_rank"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_rank"]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_clip_recall_mrr": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_mrr"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_mrr"]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_clip_recall_at_1": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_at_1"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_at_1"]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_clip_recall_at_5": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_at_5"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_at_5"]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_clip_recall_at_10": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_at_10"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_at_10"]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_clip_recall_max_rank": float(
-                np.mean([s["scores"]["candidate_summary_clip_recall_max_rank"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["candidate_summary_clip_recall_max_rank"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_rank": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_rank"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_rank"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_mrr": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_mrr"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_mrr"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_at_1": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_at_1"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_at_1"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_at_5": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_at_5"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_at_5"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_at_10": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_at_10"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_at_10"]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_clip_recall_max_rank": float(
-                np.mean([s["scores"]["reference_summary_clip_recall_max_rank"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["reference_summary_clip_recall_max_rank"]
+                        for s in samples
+                    ]
+                )
             ),
-            "baseline_clip_recall_rank": float(np.mean([s["scores"]["baseline_clip_recall_rank"] for s in samples])),
-            "baseline_clip_recall_mrr": float(np.mean([s["scores"]["baseline_clip_recall_mrr"] for s in samples])),
-            "baseline_clip_recall_at_1": float(np.mean([s["scores"]["baseline_clip_recall_at_1"] for s in samples])),
-            "baseline_clip_recall_at_5": float(np.mean([s["scores"]["baseline_clip_recall_at_5"] for s in samples])),
-            "baseline_clip_recall_at_10": float(np.mean([s["scores"]["baseline_clip_recall_at_10"] for s in samples])),
+            "baseline_clip_recall_rank": float(
+                np.mean(
+                    [s["scores"]["baseline_clip_recall_rank"] for s in samples]
+                )
+            ),
+            "baseline_clip_recall_mrr": float(
+                np.mean(
+                    [s["scores"]["baseline_clip_recall_mrr"] for s in samples]
+                )
+            ),
+            "baseline_clip_recall_at_1": float(
+                np.mean(
+                    [s["scores"]["baseline_clip_recall_at_1"] for s in samples]
+                )
+            ),
+            "baseline_clip_recall_at_5": float(
+                np.mean(
+                    [s["scores"]["baseline_clip_recall_at_5"] for s in samples]
+                )
+            ),
+            "baseline_clip_recall_at_10": float(
+                np.mean(
+                    [
+                        s["scores"]["baseline_clip_recall_at_10"]
+                        for s in samples
+                    ]
+                )
+            ),
             "baseline_clip_recall_max_rank": float(
-                np.mean([s["scores"]["baseline_clip_recall_max_rank"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["baseline_clip_recall_max_rank"]
+                        for s in samples
+                    ]
+                )
             ),
         },
         # Content Scores
         "content_recall": {
             "candidate_summary_noun_recall": float(
-                np.mean([s["scores"]["content_recall"]["candidate_summary_noun_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "candidate_summary_noun_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_verb_recall": float(
-                np.mean([s["scores"]["content_recall"]["candidate_summary_verb_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "candidate_summary_verb_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_noun_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["candidate_summary_noun_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "candidate_summary_noun_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "candidate_summary_verb_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["candidate_summary_verb_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "candidate_summary_verb_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_noun_recall": float(
-                np.mean([s["scores"]["content_recall"]["reference_summary_noun_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "reference_summary_noun_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_verb_recall": float(
-                np.mean([s["scores"]["content_recall"]["reference_summary_verb_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "reference_summary_verb_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_noun_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["reference_summary_noun_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "reference_summary_noun_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "reference_summary_verb_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["reference_summary_verb_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "reference_summary_verb_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "baseline_noun_recall": float(
-                np.mean([s["scores"]["content_recall"]["baseline_noun_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"]["baseline_noun_recall"]
+                        for s in samples
+                    ]
+                )
             ),
             "baseline_verb_recall": float(
-                np.mean([s["scores"]["content_recall"]["baseline_verb_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"]["baseline_verb_recall"]
+                        for s in samples
+                    ]
+                )
             ),
             "baseline_noun_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["baseline_noun_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "baseline_noun_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
             "baseline_verb_fuzzy_recall": float(
-                np.mean([s["scores"]["content_recall"]["baseline_verb_fuzzy_recall"] for s in samples])
+                np.mean(
+                    [
+                        s["scores"]["content_recall"][
+                            "baseline_verb_fuzzy_recall"
+                        ]
+                        for s in samples
+                    ]
+                )
             ),
         },
-        # Hallucination Scores
-        "hallucinations": {
-            "hallucinated_objects_percentage": float(np.sum([s["hallucinated_object_count"] for s in samples]))
-            / float(np.sum([s["object_count"] for s in samples])),
-            "hallucinated_captions_percentage": float(
-                np.sum([1 for s in samples if s["hallucinated_object_count"] > 0])
+        # OCR Scores
+        "ocr_recall": {
+            "average_ocr_fraction": float(
+                np.mean(
+                    [s['ocr_fraction'] for s in samples if s['has_gt_ocr']]
+                )
+            ),
+            "overall_ocr_fraction": float(
+                np.sum([s['ocr_mentioned'] for s in samples])
             )
-            / float(len(samples)),
-            "average_hungarian_matching_score": float(
-                np.mean([s["scores"]["hungarian_matching_score"] for s in samples])
+            / float(np.sum([s['gt_ocr_count'] for s in samples])),
+            "overall_true_ocr_fraction": float(
+                np.sum(
+                    [
+                        s['ocr_mentioned']
+                        for s in samples
+                        if s['has_listing'] == False
+                    ]
+                )
+            )
+            / float(
+                np.sum(
+                    [
+                        s['gt_ocr_count']
+                        for s in samples
+                        if s['has_listing'] == False
+                    ]
+                )
+            ),
+            "ocr_listing_count": float(
+                np.sum([1 for s in samples if s['has_listing']])
+            ),
+            "has_gt_ocr_count": float(
+                np.sum([1 for s in samples if s['has_gt_ocr']])
             ),
         },
     }
