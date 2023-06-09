@@ -94,7 +94,8 @@ class NGramRepeatBlock(nn.Module):
     def _no_repeat_ngram(self, tokens, lprobs, bsz: int, beam_size: int, step: int):
         """For each hypothesis generate a list of previous ngrams and set associated lprobs to -inf"""
         gen_ngrams: List[Dict[str, List[int]]] = [
-            torch.jit.annotate(Dict[str, List[int]], {}) for bbsz_idx in range(bsz * beam_size)
+            torch.jit.annotate(Dict[str, List[int]], {})
+            for _ in range(bsz * beam_size)
         ]
         cpu_tokens = tokens.cpu()
         for bbsz_idx in range(bsz * beam_size):
@@ -135,6 +136,5 @@ class NGramRepeatBlock(nn.Module):
     @staticmethod
     def transpose_list(l: List[List[int]]):  # noqa: E741
         # GeneratorExp aren't supported in TS so ignoring the lint
-        min_len = min([len(x) for x in l])
-        l2 = [[row[i] for row in l] for i in range(min_len)]
-        return l2
+        min_len = min(len(x) for x in l)
+        return [[row[i] for row in l] for i in range(min_len)]

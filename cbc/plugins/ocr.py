@@ -133,7 +133,7 @@ def filter_and_sort_ocr(image, results):
 
     ocr_filtered_and_sorted = []
 
-    if len(ocr_filtered) > 0:
+    if ocr_filtered:
         # Sort OCR tokens based on clustering
         ocr_filtered_and_sorted = cluster_and_sort_ocr_tokens(ocr_filtered, cluster_threshold)
         ocr_filtered_and_sorted = [ocr[1][0] for ocr in ocr_filtered_and_sorted]

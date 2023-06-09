@@ -77,7 +77,7 @@ def aws_transcribe(path: Union[str, bytes]) -> Tuple[str, str]:
 
     # Create a tempfile
     transcribe_client = boto3.client("transcribe")
-    job_name = "cbc-" + compute_md5_hash_from_bytes(inputs)
+    job_name = f"cbc-{compute_md5_hash_from_bytes(inputs)}"
     _create_aws_transcribe_job_if_necessary(transcribe_client, job_name)
 
     while (status := transcribe_client.get_transcription_job(TranscriptionJobName=job_name))["TranscriptionJob"][
@@ -189,7 +189,4 @@ def load_audio_to_wav_bytes(path: str) -> Optional[bytes]:
         stderr=subprocess.PIPE,
     )
     stdout, stderr = ffmpeg.communicate()
-    if ffmpeg.returncode != 0:
-        return None
-
-    return stdout
+    return None if ffmpeg.returncode != 0 else stdout

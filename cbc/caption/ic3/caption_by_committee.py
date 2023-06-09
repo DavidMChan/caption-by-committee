@@ -74,10 +74,7 @@ def _sort_captions(input_captions: List[str], scores: List[LikelihoodOutput]) ->
             strike=[t in FILTER_TOKENS for t in tokens],
         )
 
-    # Sort input_captions by output_scores
-    output_captions = [s for _, s in sorted(zip(output_scores, input_captions), reverse=True)]
-
-    return output_captions
+    return [s for _, s in sorted(zip(output_scores, input_captions), reverse=True)]
 
 
 def get_prompt_for_candidates(

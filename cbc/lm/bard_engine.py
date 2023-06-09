@@ -85,8 +85,7 @@ class Chatbot:
         # Find "SNlM0e":"<ID>"
         if resp.status_code != 200:
             raise Exception("Could not get Google Bard")
-        SNlM0e = re.search(r"SNlM0e\":\"(.*?)\"", resp.text).group(1)
-        return SNlM0e
+        return re.search(r"SNlM0e\":\"(.*?)\"", resp.text)[1]
 
     @sleep_and_retry
     @limits(calls=1, period=180)

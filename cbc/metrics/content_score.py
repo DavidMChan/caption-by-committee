@@ -31,8 +31,8 @@ def exact_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN"
 
     query_doc = nlp(query)
     targets_doc = nlp(" ".join(targets))
-    query_objects = set([token.text for token in query_doc if token.pos_ in POS])
-    targets_objects = set([token.text for token in targets_doc if token.pos_ in POS])
+    query_objects = {token.text for token in query_doc if token.pos_ in POS}
+    targets_objects = {token.text for token in targets_doc if token.pos_ in POS}
     # Return the recall
     return float(len(set(query_objects).intersection(set(targets_objects))) / (len(set(targets_objects)) + 1e-8))
 
@@ -70,10 +70,8 @@ def fuzzy_overlap(query: str, targets: List[str], POS: Tuple[str, ...] = ("NOUN"
 
     metric = []
     for q in tos:
-        sims = []
-        for t in qos:
-            sims.append(q.similarity(t))
-        metric.append(max(sims) if sims else 0)
+        sims = [q.similarity(t) for t in qos]
+        metric.append(max(sims, default=0))
 
     return float(sum(metric) / (len(metric) + 1e-8))
 

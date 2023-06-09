@@ -34,7 +34,7 @@ class HuggingfaceInferenceLMEngine(LMEngine):
                     json={
                         "inputs": prompt,
                         "parameters": {
-                            "do_sample": False if n_completions == 1 else True,
+                            "do_sample": n_completions != 1,
                             "wait_for_model": True,
                         },
                     },

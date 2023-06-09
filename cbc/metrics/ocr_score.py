@@ -16,12 +16,12 @@ def compute_and_add_ocr_recall(samples: List[Dict[str, Any]]) -> List[Dict[str, 
 
     for sample in tqdm.tqdm(samples):
         ocr_list = sample.get("meta", {}).get("ocr_tokens", [])
-        ocr_list = list(set([token.lower() for token in ocr_list]))
+        ocr_list = list({token.lower() for token in ocr_list})
         # Only keep the OCR tokens that are in English dictionary
         ocr_list = [token for token in ocr_list if english_dict.check(token)]
 
         # Exclude those samples with no valid OCR tokens
-        if len(ocr_list) == 0:
+        if not ocr_list:
             sample["ocr_fraction"] = -1
             sample["ocr_mentioned"] = 0
             sample["gt_ocr_count"] = 0
