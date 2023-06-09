@@ -67,7 +67,6 @@ def _get_text_feature(samples: List[str], char_limit: int = 300) -> torch.Tensor
 def _get_text_features(
     candidates: List[str], references: List[str], baselines: List[str], char_limit: int = 300
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-
     return _get_text_feature(candidates), _get_text_feature(references), _get_text_feature(baselines)
 
 
@@ -111,11 +110,9 @@ def compute_clips(
 def compute_and_add_clip_recall(
     samples: List[Dict[str, Any]], image_path_key: str, image_root: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-
     feature_db = _get_image_feature_db(samples, image_path_key, image_root)
 
     for index, sample in enumerate(tqdm.tqdm(samples)):
-
         if "candidate_summary" in sample:
             candidate_ranks = _compute_rank(index, feature_db, sample["candidate_summary"])
             sample["scores"]["candidate_summary_clip_recall_rank"] = float(np.mean(candidate_ranks))

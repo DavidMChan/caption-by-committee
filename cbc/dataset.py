@@ -17,8 +17,8 @@ from cbc.metrics import (
     compute_and_add_clip_recall,
     compute_and_add_content_recall,
     compute_and_add_mauve_score,
+    compute_and_add_ocr_recall,
     compute_and_add_self_bleu,
-    compute_and_add_ocr_recall
 )
 from cbc.plugins import IMAGE_PLUGINS
 
@@ -110,6 +110,11 @@ def evaluate_dataset(
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
 
+        _save_json_tmp_file(output_json_path, samples)
+
+    # Save the output to a temporary file which will persist in case of a crash
+    _save_json_tmp_file(output_json_path, samples)
+
     # 2.1 Compute the plugin features for each image (if not already computed)
     for plugin_name in plugin:
         print(f"Loading plugin {plugin_name}...")
@@ -178,7 +183,7 @@ def evaluate_dataset(
     # 8. Compute the Self-BLEU for the candidates/references (if not already computed)
     print("Computing Self-BLEU...")
     samples = compute_and_add_self_bleu(samples, candidate_key, reference_key)
-    
+
     # 9. Compute the OCR Recall
     print("Computing OCR recall...")
     samples = compute_and_add_ocr_recall(samples)
@@ -324,14 +329,16 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
         },
         # OCR Scores
         "ocr_recall": {
-            "average_ocr_fraction": float(np.mean([s['ocr_fraction'] for s in samples if s['has_gt_ocr']])),
-            "overall_ocr_fraction": float(np.sum([s['ocr_mentioned'] for s in samples])) 
-                                        / float(np.sum([s['gt_ocr_count'] for s in samples])),
-            "overall_true_ocr_fraction": float(np.sum([s['ocr_mentioned'] for s in samples if s['has_listing'] == False]))
-                                        / float(np.sum([s['gt_ocr_count'] for s in samples if s['has_listing'] == False])),
-            "ocr_listing_count": float(np.sum([1 for s in samples if s['has_listing']])),
-            "has_gt_ocr_count": float(np.sum([1 for s in samples if s['has_gt_ocr']])),
-        }, 
+            "average_ocr_fraction": float(np.mean([s["ocr_fraction"] for s in samples if s["has_gt_ocr"]])),
+            "overall_ocr_fraction": float(np.sum([s["ocr_mentioned"] for s in samples]))
+            / float(np.sum([s["gt_ocr_count"] for s in samples])),
+            "overall_true_ocr_fraction": float(
+                np.sum([s["ocr_mentioned"] for s in samples if s["has_listing"] is False])
+            )
+            / float(np.sum([s["gt_ocr_count"] for s in samples if s["has_listing"] is False])),
+            "ocr_listing_count": float(np.sum([1 for s in samples if s["has_listing"]])),
+            "has_gt_ocr_count": float(np.sum([1 for s in samples if s["has_gt_ocr"]])),
+        },
     }
 
     return metrics

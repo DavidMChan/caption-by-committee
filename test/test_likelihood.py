@@ -6,7 +6,6 @@ from cbc.caption import OFACaptionEngine
 
 
 def test_ofa_likelihood() -> None:
-
     # Load the test image
     image_path = os.path.join(os.path.dirname(__file__), "test_image.jpg")
     image = Image.open(image_path)

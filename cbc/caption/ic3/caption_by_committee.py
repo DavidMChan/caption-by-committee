@@ -51,7 +51,6 @@ FILTER_TOKENS.update(stopwords.words("english"))
 
 
 def _sort_captions(input_captions: List[str], scores: List[LikelihoodOutput]) -> List[str]:
-
     # Generate the scores for each input caption
     output_scores = []
     for score in scores:
@@ -132,7 +131,6 @@ def caption_by_committee(
     select_best: bool = False,
     force_candidate_captions: Optional[List[str]] = None,
 ) -> Union[str, List[str]]:
-
     """
     Generate a caption for an image using a committee of captioning models.
     """
