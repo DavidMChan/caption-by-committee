@@ -163,7 +163,7 @@ class ChatCaptionerEngine(CaptionEngine):
         if isinstance(caption_engine, str):
             from cbc.caption import CAPTION_ENGINES_CLI
 
-            self.captioner = CAPTION_ENGINES_CLI[caption_engine](device=device)
+            self.captioner = CAPTION_ENGINES_CLI[caption_engine](device="cuda")
         else:
             self.captioner = caption_engine
 

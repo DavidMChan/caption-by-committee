@@ -110,6 +110,8 @@ def evaluate_dataset(
         if sample.get("baseline", None) is None or overwrite_candidates:
             sample["baseline"] = sample[candidate_key][0]  # type: ignore
 
+        _save_json_tmp_file(output_json_path, samples)
+
     # Save the output to a temporary file which will persist in case of a crash
     _save_json_tmp_file(output_json_path, samples)
 
