@@ -250,7 +250,7 @@ def compute_and_add_object_hallucinations(
 
         if 'gt_objects' in sample:
             reference_objects = list(set(reference_objects + sample['gt_objects']))
-        
+
         if len(reference_objects) == 0 or len(target_objects) == 0:
             continue
 
@@ -280,7 +280,7 @@ def compute_and_add_object_hallucinations(
             target_obj2 = target_objects[idx2]
 
             if max_similarity[idx1] < semantic_similarity_threshold and max_similarity[idx2] < semantic_similarity_threshold and target_obj1 not in references and target_obj2 not in references:
-                hallucinated_objects.append(target_obj1 + " or " + target_obj2)
+                hallucinated_objects.append(f"{target_obj1} or {target_obj2}")
 
         hallucinated_object_count += len(hallucinated_objects)
         object_count += len(target_objects)
