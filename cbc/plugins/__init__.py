@@ -1,7 +1,7 @@
 from typing import Dict, Type
 
 from .base import ImagePlugin, TestPlugin
-from .ocr import OcrNoCorrectionPlugin, OcrPlugin
+from .ocr import OcrPlugin, OcrNoCorrectionPlugin
 
 IMAGE_PLUGINS: Dict[str, Type[ImagePlugin]] = {
     "test": TestPlugin,

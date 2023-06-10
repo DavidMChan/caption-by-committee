@@ -13,14 +13,11 @@ from cbc.utils.python import singleton
 
 class HuggingFaceLlamaLMEngine(LMEngine):
     def __init__(self, model: str, weight_root: str, device: Optional[str] = None):
-
         if LlamaForCausalLM is None or LlamaTokenizer is None:
             raise ImportError("Please install the transformers >= 4.28.0 to use this LM engine.")
 
         self._device = device
-        self.tokenizer = LlamaTokenizer.from_pretrained(
-            f"{os.environ.get(weight_root, '')}{model}"
-        )
+        self.tokenizer = LlamaTokenizer.from_pretrained(f"{os.environ.get(weight_root, '')}{model}")
         self._generator = LlamaForCausalLM.from_pretrained(
             f"{os.environ.get(weight_root, '')}{model}", device_map="auto"
         )
@@ -33,7 +30,7 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         if temperature is not None and temperature > 0:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 temperature=temperature,
                 do_sample=True,
@@ -41,14 +38,14 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         elif n_completions > 1:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 do_sample=True,
             )
         else:
             outputs = self._generator.generate(
                 input,
-                max_new_tokens=256,
+                max_new_tokens=128,
                 num_return_sequences=n_completions,
                 do_sample=False,
             )
@@ -69,7 +66,7 @@ class HuggingFaceLlamaLMEngine(LMEngine):
         # Beam search here doesn't work, since it requires too much GPU memory.
         outputs = self._generator.generate(
             input,
-            max_new_tokens=256,
+            max_new_tokens=128,
             do_sample=True,
             temperature=1.0,
             num_return_sequences=1,

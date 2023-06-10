@@ -22,7 +22,6 @@ class HuggingFaceLocalLMEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         if temperature is not None and temperature > 0:
             outputs = self._generator(
                 prompt,
@@ -73,7 +72,6 @@ class HuggingFaceLocalSummaryEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         if temperature is not None and temperature > 0:
             outputs = self._generator(
                 prompt,
@@ -82,7 +80,6 @@ class HuggingFaceLocalSummaryEngine(LMEngine):
                 num_return_sequences=n_completions,
                 do_sample=True,
                 temperature=temperature,
-                return_full_text=False,
             )
         else:
             outputs = self._generator(
@@ -91,7 +88,6 @@ class HuggingFaceLocalSummaryEngine(LMEngine):
                 min_new_tokens=10,
                 num_return_sequences=n_completions,
                 do_sample=False,
-                return_full_text=False,
             )
 
         outputs = [g["summary_text"].strip() for g in outputs]  # type: ignore
@@ -99,7 +95,7 @@ class HuggingFaceLocalSummaryEngine(LMEngine):
         return outputs
 
     def best(self, prompt: str) -> str:
-        outputs = self._generator(prompt, max_new_tokens=256, min_new_tokens=10, num_beams=16, return_full_text=False)
+        outputs = self._generator(prompt, max_new_tokens=256, min_new_tokens=10, num_beams=16)
         outputs = [g["summary_text"].strip() for g in outputs]  # type: ignore
 
         return outputs[0]
@@ -115,7 +111,6 @@ class StopOnTokens(StoppingCriteria):
 
 
 class StableLMChatEngine(LMEngine):
-
     SYSTEM_PROMPT = """<|SYSTEM|># StableLM Tuned (Alpha version)
 - StableLM is a helpful and harmless open-source AI language model developed by StabilityAI.
 - StableLM is excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
@@ -144,7 +139,6 @@ class StableLMChatEngine(LMEngine):
     def __call__(
         self, prompt: str, n_completions: int = 1, temperature: Optional[float] = None, **kwargs: Any
     ) -> List[str]:
-
         # Filter the prompt (one-off experiment)
         prompt = prompt.replace("Summary:", "\nComplete the following sentence according to the task above:\nSummary: ")
         prompt = f"{StableLMChatEngine.SYSTEM_PROMPT}<|USER|>{prompt}<|ASSISTANT|>"
@@ -174,9 +168,7 @@ class StableLMChatEngine(LMEngine):
         return outputs
 
     def best(self, prompt: str) -> str:
-
         with torch.no_grad():
-
             pre_input_prompt = prompt.replace("Summary:", "\nComplete the following sentence:\n")
             lm_prompt = f"{StableLMChatEngine.SYSTEM_PROMPT}<|USER|>{pre_input_prompt}<|ASSISTANT|>"
             inputs = self._tokenizer(lm_prompt, return_tensors="pt").to(self._device)

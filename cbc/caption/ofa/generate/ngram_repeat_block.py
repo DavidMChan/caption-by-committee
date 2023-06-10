@@ -101,7 +101,10 @@ class NGramRepeatBlock(nn.Module):
             gen_tokens: List[int] = cpu_tokens[bbsz_idx].tolist()
             for ngram in self.transpose_list([gen_tokens[i:] for i in range(self.no_repeat_ngram_size)]):
                 key = ",".join([str(x) for x in ngram[:-1]])
-                gen_ngrams[bbsz_idx][key] = [*gen_ngrams[bbsz_idx].get(key, torch.jit.annotate(List[int], [])), ngram[-1]]
+                gen_ngrams[bbsz_idx][key] = [
+                    *gen_ngrams[bbsz_idx].get(key, torch.jit.annotate(List[int], [])),
+                    ngram[-1],
+                ]
         if step + 2 - self.no_repeat_ngram_size >= 0:
             # no banned tokens if we haven't generated no_repeat_ngram_size tokens yet
             banned_tokens = [
@@ -130,7 +133,7 @@ class NGramRepeatBlock(nn.Module):
         return gen_ngrams[bbsz_idx].get(ngram_index, torch.jit.annotate(List[int], []))
 
     @staticmethod
-    def transpose_list(l: List[List[int]]): # noqa: E741
+    def transpose_list(l: List[List[int]]):  # noqa: E741
         # GeneratorExp aren't supported in TS so ignoring the lint
         min_len = min([len(x) for x in l])
         l2 = [[row[i] for row in l] for i in range(min_len)]

@@ -7,15 +7,15 @@ from .huggingface_inference_engine import (  # noqa: F401
     Bloom,
     HuggingfaceInferenceLMEngine,
 )
-from .huggingface_llama_engine import (  # noqa: F401
-    Llama7B,
-    Llama13B,
-    Llama30B,
-    Llama65B,
+from .huggingface_llama_engine import (
     Alpaca7B,
     Koala7B,
     Koala13B_V1,
     Koala13B_V2,
+    Llama7B,
+    Llama13B,
+    Llama30B,
+    Llama65B,
     Vicuna_7B,
     Vicuna_13B,
 )
@@ -50,6 +50,7 @@ from .openai_engine import (  # noqa: F401
     GPT3Davinci3,
     OpenAI,
 )
+from .vertex_engine import PaLMEngine
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "ChatGPT": ChatGPT,
@@ -89,6 +90,7 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "Stable LM Base (3B)": StableLMBase3B,
     "Stable LM Base (7B)": StableLMBase7B,
     "Bard": BardEngine,
+    "PaLM": PaLMEngine,
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
@@ -129,6 +131,7 @@ LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "stable_lm_base_3B": StableLMBase3B,
     "stable_lm_base_7B": StableLMBase7B,
     "bard": BardEngine,
+    "palm": PaLMEngine,
 }
 
 LM_LOCAL_ENGINES: Set[str] = {

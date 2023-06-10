@@ -1,7 +1,7 @@
 import logging
 import os
 import subprocess
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
 from git.repo import Repo
@@ -11,6 +11,7 @@ from torchvision import transforms
 from cbc.caption.base import CaptionEngine
 from cbc.caption.utils import postprocess_caption
 from cbc.utils.python import chdir
+from cbc.utils.pytorch import select_device
 
 from .ofa import OFAModel, OFATokenizer
 
@@ -53,7 +54,7 @@ def _get_ofa_model(model: str) -> Tuple[str, str]:
         logging.debug(f"[Fetching OFA] Running git lfs pull in {cache_dir}...")
         try:
             output = subprocess.check_output(["git", "lfs", "pull"])
-            logging.debug(f"[Fetching OFA] git lfs pull output: {str(output)}")
+            logging.debug(f"[Fetching OFA] git lfs pull output: {output!s}")
         except subprocess.CalledProcessError as e:
             logging.error(f"[Fetching OFA] git lfs pull failed: {e}")
             raise
@@ -65,13 +66,13 @@ class OFACaptionEngine(CaptionEngine):
     def __init__(
         self, ofa_model: str = "large-caption", device: Optional[str] = None, prompt: str = _OFA_DEFAULT_PROMPT
     ):
-
+        device = select_device(device)
         tokenizer_path, model_path = _get_ofa_model(ofa_model)
         self.tokenizer = OFATokenizer.from_pretrained(tokenizer_path)
         self.model = OFAModel.from_pretrained(model_path, device=device, use_cache=True)
         self.model = self.model.to(device or "cpu").eval()
         self.prompt = prompt
-        self.device = device or "cpu"
+        self.device = device
 
     def _preprocess_image(self, raw_image: Image.Image) -> torch.Tensor:
         mean, std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
@@ -88,11 +89,11 @@ class OFACaptionEngine(CaptionEngine):
 
     def _get_language_prompt(
         self,
+        postfix="",
     ) -> torch.Tensor:
-        return self.tokenizer([self.prompt], return_tensors="pt").input_ids.to(self.device)
+        return self.tokenizer([self.prompt + postfix], return_tensors="pt").input_ids.to(self.device)
 
     def __call__(self, raw_image: Image.Image, n_captions: int = 1, temperature: Optional[float] = 1.0) -> List[str]:
-
         patch_img = self._preprocess_image(raw_image)
         inputs = self._get_language_prompt()
 
@@ -115,8 +116,8 @@ class OFACaptionEngine(CaptionEngine):
         return [postprocess_caption(caption.strip()) for caption in output_captions]
 
     def get_baseline_caption(self, raw_image: Image.Image) -> str:
-        patch_image = self._preprocess_image(raw_image)
-        prefix = self._get_language_prompt()
+        patch_image = self._preprocess_image(raw_image).to(self.device)
+        prefix = self._get_language_prompt().to(self.device)
         baseline_gen = self.model.generate(  # type: ignore
             prefix,
             patch_images=patch_image,
@@ -128,3 +129,61 @@ class OFACaptionEngine(CaptionEngine):
         baseline_caption = postprocess_caption(baseline_caption[0].strip())
 
         return baseline_caption
+
+    def likelihood(self, raw_image: Image, caption: str) -> Dict[str, torch.Tensor]:
+        caption = " " + caption.lower().replace(
+            ".", ""
+        )  # Super weird quirk in how the captions are generated, requires a space at the beginning
+        patch_img = self._preprocess_image(raw_image).to(self.device)
+        inputs = self._get_language_prompt().to(self.device)
+        decoder_input_ids = self.tokenizer(caption, return_tensors="pt").input_ids.to(self.device)
+
+        # Prepare the inputs tensor
+        inputs_tensor, _, model_kwargs = self.model._prepare_model_inputs(
+            inputs,
+            0,
+            {
+                "patch_images": patch_img,
+            },
+        )
+
+        model_kwargs = self.model._prepare_encoder_decoder_kwargs_for_generation(inputs_tensor, model_kwargs, None)
+        outputs = self.model(decoder_input_ids=decoder_input_ids, **model_kwargs)  # type: ignore
+
+        # Logits are outputs.logits, indices are decoder_input_ids. Shift the decoder input ids by one to get the
+        # target indices, and then use those to index into the logits to get the log probabilities of the target
+        logits_shifted = outputs.logits[:, :-1, :].contiguous()
+        target_indices = decoder_input_ids[:, 1:].contiguous()
+        log_probs = torch.nn.functional.log_softmax(logits_shifted, dim=-1)
+
+        # Get the rank of the target indices in the log probabilities
+        rank = torch.argsort(log_probs, dim=-1, descending=True)
+        rank = torch.where(rank == target_indices.unsqueeze(-1))[2]
+        # Print the average rank of the target indices
+        logging.debug(f"Caption: {caption}, Average rank of target indices: {rank.float().mean().item()}")
+
+        rank_score = (1 + rank) / log_probs.shape[-1]
+
+        # Return the tensor of log probabilities
+        outs = log_probs.gather(dim=-1, index=target_indices.unsqueeze(-1)).squeeze()
+
+        # Get the top 5 tokens and their probabilities for each token in the caption
+        topk = torch.topk(log_probs, k=5, dim=-1)
+
+        # Do some cool printing of the output likelihoods
+        decoded_tokens = self.tokenizer.convert_ids_to_tokens(decoder_input_ids[0])
+        output_topk_tokens = []
+        for f, z, tk, r in zip(decoded_tokens[1:], outs, topk.indices[0], rank):
+            # Deocde the top-k tokens
+            topk_tokens = self.tokenizer.convert_ids_to_tokens(tk)
+            topk_tokens = [t.replace("Ġ", "") for t in topk_tokens]  # Remove part separators
+            output_topk_tokens.append(topk_tokens)
+
+        return {
+            "log_probs": outs,
+            "ranks": rank,
+            "normalized_rank_score": rank_score,
+            "output_topk_tokens": output_topk_tokens,
+            "output_tokens": decoded_tokens,
+            "full_log_probs": log_probs,
+        }

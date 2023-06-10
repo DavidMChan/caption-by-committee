@@ -8,6 +8,7 @@ from scipy.optimize import linear_sum_assignment
 from sentence_transformers import SentenceTransformer
 
 from cbc.lm import ChatGPT, OpenAI
+from cbc.utils.python import retry
 
 
 def extract_root_noun(text, nlp):
@@ -16,6 +17,7 @@ def extract_root_noun(text, nlp):
     root_noun = next((token for token in doc if token.head == token), None)
     # Return the lemma of the root noun
     return root_noun.lemma_ if root_noun is not None else None
+
 
 def parse_objects(obj_str, model, nlp):
     if obj_str is None or obj_str == "":
@@ -26,17 +28,17 @@ def parse_objects(obj_str, model, nlp):
 
     for obj in obj_str.split("\n"):
         if len(obj) < 3:
-           continue 
-
-        if obj[0] != '-':
             continue
-        if 'possibly' in obj:
+
+        if obj[0] != "-":
+            continue
+        if "possibly" in obj:
             continue
 
         obj = obj[1:].strip()
 
-        if '(' in obj:
-            obj = obj[:obj.index('(')].strip()
+        if "(" in obj:
+            obj = obj[: obj.index("(")].strip()
 
         if " or " in obj:
             if len(obj.split(" or ")) != 2:
@@ -62,6 +64,8 @@ def parse_objects(obj_str, model, nlp):
 
     return res, or_indices
 
+
+@retry
 def extract_objects_single_caption(target_caption):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -112,11 +116,13 @@ Objects:"""},
         ],
         temperature=0
     )
-    
+
     OpenAI.USAGE += int(completion.usage.total_tokens) * ChatGPT.COST_PER_TOKEN
 
     return completion.choices[0].message.content
 
+
+@retry
 def extract_objects_multiple_captions(references):
     target_caption = "\n".join([f"- {r}" for r in references])
     completion = openai.ChatCompletion.create(
@@ -135,7 +141,7 @@ Strictly abide by the following rules:
             {"role": "user", "content": """
 Captions:
 - A baseball player runs into home plate during a game.
-- A man is running the bases in a baseball game. 
+- A man is running the bases in a baseball game.
 - A group of players playing a baseball game.
 - A man is running to home base in a baseball game.
 - A man in a white shirt and gray pants walks toward a grassy area as kids in baseball uniforms and an umpire are near him.
@@ -165,10 +171,13 @@ Captions:
 - A person standing next to the water and a umbrella.
 - The man rides the skateboard next to the water and the umbrella.
 - A man standing on a pier overlooking the lake with an umbrella nearby.
-- A man riding a skate board on railings near waterfront. 
+- A man riding a skate board on railings near waterfront.
 - A person is standing at the side of a big lake.
-Objects:"""},
-            {"role": "assistant", "content": """
+Objects:""",
+            },
+            {
+                "role": "assistant",
+                "content": """
 - water
 - umbrella
 - person
@@ -189,7 +198,9 @@ Objects:"""},
 
     return completion.choices[0].message.content
 
-def compute_and_add_object_hallucinations(samples: List[Dict[str, Any]], candidate_key: str, reference_key: str, semantic_similarity_threshold: float = .65
+
+def compute_and_add_object_hallucinations(
+    samples: List[Dict[str, Any]], candidate_key: str, reference_key: str, semantic_similarity_threshold: float = 0.65
 ) -> List[Dict[str, Any]]:
     object_count = 0
     hallucinated_object_count = 0
@@ -202,9 +213,9 @@ def compute_and_add_object_hallucinations(samples: List[Dict[str, Any]], candida
     candidate_objects_key = f"{candidate_key}_objects"
     reference_objects_key = f"{reference_key}_objects"
 
-    model = SentenceTransformer('all-mpnet-base-v2')
+    model = SentenceTransformer("all-mpnet-base-v2")
     text_embedding = model.encode
-    nlp = spacy.load('en_core_web_lg')
+    nlp = spacy.load("en_core_web_lg")
 
     for i in tqdm.tqdm(range(len(samples)), desc="Computing"):
         sample = samples[i]
@@ -263,7 +274,7 @@ def compute_and_add_object_hallucinations(samples: List[Dict[str, Any]], candida
 
         for j in range(0, len(obj_or_indices), 2):
             idx1 = obj_or_indices[j]
-            idx2 = obj_or_indices[j+1]
+            idx2 = obj_or_indices[j + 1]
 
             target_obj1 = target_objects[idx1]
             target_obj2 = target_objects[idx2]
