@@ -70,87 +70,51 @@ def extract_objects_single_caption(target_caption):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {
-                "role": "system",
-                "content": "You are an assistant that parses objects from a caption. Given a caption, you list ALL the objects present in the image or photo described by the caption. Do not include an object's attributes or adjectives. Do not repeat objects.",
-            },
-            {
-                "role": "user",
-                "content": """
-Caption: An assortment of fruits and vegetables, including lime, pickles, carrots, and radishes, arranged in a bowl or on a piece of aluminum foil.
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- fruit
-- vegetable
-- lime
-- pickle
-- carrot
-- radish
-- bowl or foil
-            """,
-            },
-            {
-                "role": "user",
-                "content": """
-Caption: A desk with two computer monitors, a laptop, a gray keyboard, printer, and possibly other items, such as papers, notebooks, and other clutter.
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
+            {"role": "system", "content": 
+"""You are an assistant that parses visually present objects from an image caption. Given an image caption, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
+
+Strictly abide by the following rules:
+- Do not include attributes such as colors or size
+- Do not include objects that are not visually present in the image, such as light, sound, or emotions
+- If the caption is uncertain about an object, include '(possibly)' after the object
+- If the caption thinks an object can be one of several things, include 'or' and all the possible objects
+- Do not include objects that are mentioned but have no visual presence in the image
+- Do not include adjectives such as "happy" or "sad" """},
+
+            {"role": "user", "content": """
+Caption: A desk with two computer monitors, a laptop, a gray keyboard, printer or desktop, and possibly other items, such as papers, notebooks, and other clutter.
+Objects:"""},
+            {"role": "assistant", "content": """
 - desk
 - monitor
 - laptop
 - keyboard
-- printer
+- printer or desktop
 - paper (possibly)
 - notebook (possibly)
-            """,
-            },
-            {
-                "role": "user",
-                "content": """
-Caption: A white table with a globe, lamp, pencil container, a bunch of bananas, and possibly a large violin case on it.
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- table
-- globe
-- lamp
-- container
-- banana
-- case (possibly)
-            """,
-            },
-            {
-                "role": "user",
-                "content": """
+            """},
+            {"role": "user", "content": """
 Caption: Two women in white shirts playing a game of tennis on a court, with one of them wiping sweat from her face, with a pained facial expression, possibly due to frustration from losing a match, with people spectating.
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- woman
-- shirt
-- game
-- court
-- face
-- people
-            """,
-            },
-            {
-                "role": "user",
-                "content": f"""
+Objects:"""},
+            {"role": "assistant", "content": """
+- person
+            """},
+            {"role": "user", "content": """
+Caption: A dimly lit kitchen with a sink, stove, cupboards, bottles, cups or jugs, and other items, white tiled walls, and wooden countertops, with light shining from a window.
+Objects:"""},
+            {"role": "assistant", "content": """
+- sink
+- stove
+- cupboard
+- bottle
+- cup or jug
+- countertop
+            """},
+            {"role": "user", "content": f"""
 Caption: {target_caption}
-Objects:""",
-            },
+Objects:"""},
         ],
+        temperature=0
     )
 
     OpenAI.USAGE += int(completion.usage.total_tokens) * ChatGPT.COST_PER_TOKEN
@@ -164,13 +128,17 @@ def extract_objects_multiple_captions(references):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {
-                "role": "system",
-                "content": "You are an assistant that parses objects from a set of captions. Given a set of captions, you list ALL the objects present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.",
-            },
-            {
-                "role": "user",
-                "content": """
+            {"role": "system", "content": 
+"""You are an assistant that parses visually present objects from a set of image captions. Given a set of image captions, you list ALL the objects visually present in the image or photo described by the captions. Do not include an object's attributes or adjectives. Do not repeat objects.
+
+Strictly abide by the following rules:
+- Do not include attributes such as colors or size
+- Do not include objects that are not visually present in the image, such as light, sound, or emotions
+- If the caption is uncertain about an object, include '(possibly)' after the object
+- If the caption thinks an object can be one of several things, include 'or' and all the possible objects
+- Do not include objects that are mentioned but have no visual presence in the image
+- Do not include adjectives such as "happy" or "sad" """},
+            {"role": "user", "content": """
 Captions:
 - A baseball player runs into home plate during a game.
 - A man is running the bases in a baseball game.
@@ -178,27 +146,12 @@ Captions:
 - A man is running to home base in a baseball game.
 - A man in a white shirt and gray pants walks toward a grassy area as kids in baseball uniforms and an umpire are near him.
 
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- player
+Objects:"""},
+            {"role": "assistant", "content": """
+- person
 - plate
-- game
-- man
-- base
-- group
-- shirt
-- pant
-- grass
-- kid
-- uniform
-- umpire""",
-            },
-            {
-                "role": "user",
-                "content": """
+- base"""},
+            {"role": "user", "content": """
 Captions:
 - Several people riding on a motorcycle with an umbrella open.
 - Couples riding motor cycles carrying umbrellas and people sitting at tables.
@@ -206,50 +159,14 @@ Captions:
 - Some tables and umbrellas sitting next to a building.
 - Pedestrians and motorcyclists near an open outdoor market.
 
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- people
+Objects:"""},
+            {"role": "assistant", "content": """
+- person
 - motorcycle
 - umbrella
 - table
-- scooter
-- building
-- market
-- pedestrian
-- motorcyclist""",
-            },
-            {
-                "role": "user",
-                "content": """
-Captions:
-- Two black plastic containers filled with meat, gravy and veggies.
-- Two small containers on a table, one with veggies and one with a main course.
-- A lunch box with raw vegetables, toys and an entree on a terry towel.
-- A bunch of veggies are in a small black bowl.
-- Vegetables and other types of food are in two black containers.
-Objects:""",
-            },
-            {
-                "role": "assistant",
-                "content": """
-- container
-- meat
-- gravy
-- vegetable
-- lunch
-- box
-- toy
-- entree
-- towel
-- bowl
-- food""",
-            },
-            {
-                "role": "user",
-                "content": """
+- scooter"""},
+            {"role": "user", "content": """
 Captions:
 - A person standing next to the water and a umbrella.
 - The man rides the skateboard next to the water and the umbrella.
@@ -263,22 +180,18 @@ Objects:""",
                 "content": """
 - water
 - umbrella
-- man
+- person
 - skateboard
 - pier
 - lake
 - railing
-- waterfront
-- person""",
-            },
-            {
-                "role": "user",
-                "content": f"""
-Captions:
+- waterfront"""},
+            {"role": "user", "content": f"""
+Captions: 
 {target_caption}
-Objects:""",
-            },
+Objects:"""},
         ],
+        temperature=0
     )
 
     OpenAI.USAGE += int(completion.usage.total_tokens) * ChatGPT.COST_PER_TOKEN
@@ -335,6 +248,9 @@ def compute_and_add_object_hallucinations(
         reference_objects, _ = parse_objects(reference_objects, model, nlp)
         target_objects, obj_or_indices = parse_objects(target_objects, model, nlp)
 
+        if 'gt_objects' in sample:
+            reference_objects = list(set(reference_objects + sample['gt_objects']))
+        
         if len(reference_objects) == 0 or len(target_objects) == 0:
             continue
 
@@ -363,13 +279,8 @@ def compute_and_add_object_hallucinations(
             target_obj1 = target_objects[idx1]
             target_obj2 = target_objects[idx2]
 
-            if (
-                max_similarity[idx1] < semantic_similarity_threshold
-                and max_similarity[idx2] < semantic_similarity_threshold
-                and target_obj1 not in references
-                and target_obj2 not in references
-            ):
-                hallucinated_objects.append(f"{target_obj1} or {target_obj2}")
+            if max_similarity[idx1] < semantic_similarity_threshold and max_similarity[idx2] < semantic_similarity_threshold and target_obj1 not in references and target_obj2 not in references:
+                hallucinated_objects.append(target_obj1 + " or " + target_obj2)
 
         hallucinated_object_count += len(hallucinated_objects)
         object_count += len(target_objects)
@@ -379,16 +290,30 @@ def compute_and_add_object_hallucinations(
         samples[i]["scores"]["hallucinated_object_rate"] = len(hallucinated_objects) / len(target_objects)
 
         samples[i]["scores"]["hungarian_matching_score"] = float(hm_score)
+        samples[i]['all_target_objects'] = target_objects
+        samples[i]['all_reference_objects'] = reference_objects
         samples[i]["object_count"] = len(target_objects)
 
         sample_count += 1
         if hallucinated_objects:
             hallucinated_sample_count += 1
 
-    float(np.mean(hungarian_matching_scores))
+    hungarian_matching_score = float(np.mean(hungarian_matching_scores))
 
-    float(hallucinated_object_count / object_count)
-    float(hallucinated_sample_count / sample_count)
-    float(hallucinated_object_count / hallucinated_sample_count)
+    object_hallucination_rate = float(hallucinated_object_count / object_count)
+    sample_hallucination_rate = float(hallucinated_sample_count / sample_count)
+    avg_hallucinated_object_per_sample = float(hallucinated_object_count / hallucinated_sample_count)
+
+    metrics = {
+        "hallucinated_object_count": hallucinated_object_count,
+        "object_count": object_count,
+        "hallucinated_sample_count": hallucinated_sample_count,
+        "sample_count": sample_count,
+
+        "object_hallucination_rate": object_hallucination_rate,
+        "sample_hallucination_rate": sample_hallucination_rate,
+        "hungarian_matching_score": hungarian_matching_score,
+        "avg_hallucinated_object_per_sample": avg_hallucinated_object_per_sample
+    }
 
     return samples
