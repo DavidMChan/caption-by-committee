@@ -50,6 +50,7 @@ from .openai_engine import (  # noqa: F401
     GPT3Davinci3,
     OpenAI,
 )
+from .anthropic_engine import Claude, Claude100K, ClaudeInstant, ClaudeInstant100K
 from .vertex_engine import PaLMEngine
 
 LM_ENGINES: Dict[str, Type[LMEngine]] = {
@@ -91,6 +92,10 @@ LM_ENGINES: Dict[str, Type[LMEngine]] = {
     "Stable LM Base (7B)": StableLMBase7B,
     "Bard": BardEngine,
     "PaLM": PaLMEngine,
+    "Claude": Claude,
+    "Claude (100K)": Claude100K,
+    "Claude Instant": ClaudeInstant,
+    "Claude Instant (100K)": ClaudeInstant100K,
 }
 
 LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
@@ -132,6 +137,10 @@ LM_ENGINES_CLI: Dict[str, Type[LMEngine]] = {
     "stable_lm_base_7B": StableLMBase7B,
     "bard": BardEngine,
     "palm": PaLMEngine,
+    "claude": Claude,
+    "claude_100k": Claude100K,
+    "claude_instant": ClaudeInstant,
+    "claude_instant_100k": ClaudeInstant100K,
 }
 
 LM_LOCAL_ENGINES: Set[str] = {

@@ -1,4 +1,6 @@
 def postprocess_caption(caption: str, method: str = "all") -> str:
+    caption = caption.strip()
+
     # Remove any floating special tokens, make sure there's a . at the end, and capitalize the first letter
 
     caption = caption.replace("<s>", "").replace("</s>", "")
@@ -16,6 +18,11 @@ def postprocess_caption(caption: str, method: str = "all") -> str:
 
     # If there are spaces around a period, remove them
     caption = caption.replace(" .", ".")
+
+    # Remove any case variants of "I'm not sure, but the image is likely of"
+    if caption.lower().startswith("i'm not sure, but the image is likely of"):
+        caption = caption[len("I'm not sure, but the image is likely of") :]
+    caption = caption.strip()
 
     # Make sure the first letter in each sentence is capitalized
     if method != "no_caps":
