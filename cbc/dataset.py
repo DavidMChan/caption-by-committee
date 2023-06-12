@@ -143,12 +143,12 @@ def evaluate_dataset(
     for sample in tqdm.tqdm(samples):
         if sample.get("candidate_summary") is None or overwrite_candidate_summaries:
             sample["candidate_summary_prompt"] = get_prompt_for_candidates(
-                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
+                sample[candidate_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
             )
             sample["candidate_summary"] = postprocess_caption(lm.best(prompt=sample["candidate_summary_prompt"]))
         if sample.get("reference_summary") is None or overwrite_candidate_summaries:
             sample["reference_summary_prompt"] = get_prompt_for_candidates(
-                sample[reference_key], prompt=prompt, plugin_outputs=list(sample["plugin_outputs"].values())
+                sample[reference_key], prompt=prompt, plugin_outputs=list(sample.get("plugin_outputs", {}).values())
             )
             sample["reference_summary"] = postprocess_caption(lm.best(prompt=sample["reference_summary_prompt"]))
 
@@ -331,11 +331,11 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
         "ocr_recall": {
             "average_ocr_fraction": float(np.mean([s["ocr_fraction"] for s in samples if s["has_gt_ocr"]])),
             "overall_ocr_fraction": float(np.sum([s["ocr_mentioned"] for s in samples]))
-            / float(np.sum([s["gt_ocr_count"] for s in samples])),
+            / (float(np.sum([s["gt_ocr_count"] for s in samples])) + 1e-8),
             "overall_true_ocr_fraction": float(
                 np.sum([s["ocr_mentioned"] for s in samples if s["has_listing"] is False])
             )
-            / float(np.sum([s["gt_ocr_count"] for s in samples if s["has_listing"] is False])),
+            / (float(np.sum([s["gt_ocr_count"] for s in samples if s["has_listing"] is False])) + 1e-8),
             "ocr_listing_count": float(np.sum([1 for s in samples if s["has_listing"]])),
             "has_gt_ocr_count": float(np.sum([1 for s in samples if s["has_gt_ocr"]])),
         },
