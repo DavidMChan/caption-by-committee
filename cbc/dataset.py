@@ -9,8 +9,8 @@ import tqdm
 from PIL import Image
 
 from cbc.caption import CAPTION_ENGINES_CLI
-from cbc.caption.utils import postprocess_caption
 from cbc.caption.ic3.caption_by_committee import DEFAULT_CBC_PROMPT, get_prompt_for_candidates
+from cbc.caption.utils import postprocess_caption
 from cbc.lm import LM_ENGINES_CLI, LM_LOCAL_ENGINES
 from cbc.metrics import (
     compute_and_add_base_metrics,
@@ -19,7 +19,6 @@ from cbc.metrics import (
     compute_and_add_mauve_score,
     compute_and_add_ocr_recall,
     compute_and_add_self_bleu,
-    compute_and_add_ocr_recall,
 )
 from cbc.plugins import IMAGE_PLUGINS
 
@@ -334,9 +333,9 @@ def _extract_and_aggregate_metrics(samples: List[Dict[str, Any]]) -> Dict[str, D
             "overall_ocr_fraction": float(np.sum([s["ocr_mentioned"] for s in samples]))
             / float(np.sum([s["gt_ocr_count"] for s in samples])),
             "overall_true_ocr_fraction": float(
-                np.sum([s["ocr_mentioned"] for s in samples if s["has_listing"] == False])
+                np.sum([s["ocr_mentioned"] for s in samples if s["has_listing"] is False])
             )
-            / float(np.sum([s["gt_ocr_count"] for s in samples if s["has_listing"] == False])),
+            / float(np.sum([s["gt_ocr_count"] for s in samples if s["has_listing"] is False])),
             "ocr_listing_count": float(np.sum([1 for s in samples if s["has_listing"]])),
             "has_gt_ocr_count": float(np.sum([1 for s in samples if s["has_gt_ocr"]])),
         },

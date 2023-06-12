@@ -298,22 +298,11 @@ def compute_and_add_object_hallucinations(
         if hallucinated_objects:
             hallucinated_sample_count += 1
 
-    hungarian_matching_score = float(np.mean(hungarian_matching_scores))
+    float(np.mean(hungarian_matching_scores))
 
-    object_hallucination_rate = float(hallucinated_object_count / object_count)
-    sample_hallucination_rate = float(hallucinated_sample_count / sample_count)
-    avg_hallucinated_object_per_sample = float(hallucinated_object_count / hallucinated_sample_count)
+    float(hallucinated_object_count / object_count)
+    float(hallucinated_sample_count / sample_count)
+    float(hallucinated_object_count / hallucinated_sample_count)
 
-    metrics = {
-        "hallucinated_object_count": hallucinated_object_count,
-        "object_count": object_count,
-        "hallucinated_sample_count": hallucinated_sample_count,
-        "sample_count": sample_count,
-
-        "object_hallucination_rate": object_hallucination_rate,
-        "sample_hallucination_rate": sample_hallucination_rate,
-        "hungarian_matching_score": hungarian_matching_score,
-        "avg_hallucinated_object_per_sample": avg_hallucinated_object_per_sample
-    }
 
     return samples
