@@ -205,9 +205,17 @@ Bard (Requires setting the `GOOGLE_BARD_SESSION_ID` environment variable. Get th
 
 -   "bard" (Bard model)
 
-PalM (Requires the vertex AI client libraries from Google: https://cloud.google.com/vertex-ai/docs/start/client-libraries), and a GCP project set up with the Vertex AI API enabled.):
+PaLM (Requires the vertex AI client libraries from Google: https://cloud.google.com/vertex-ai/docs/start/client-libraries), and a GCP project set up with the Vertex AI API enabled.):
 
--   "palm" (PalM model)
+-   "palm" (PaLM model)
+
+Claude (Requires setting the `ANTHROPIC_API_KEY` environment variable)
+
+- "claude" (claude-1 model)
+- "claude_100k" (claude-100k-1 model)
+- "calude_instant" (claude-instant-1 model)
+- "claude_instant_100k" (claude-100k-instant-1 model)
+
 
 ## Running the demos
 
