@@ -1,4 +1,4 @@
-# Captioning by committee
+# IC3: Image Captioning by Committee Consensus
 
 ![Method overview diagram](https://raw.githubusercontent.com/DavidMChan/caption-by-committee/main/assets/method-v2.png)
 
